@@ -359,7 +359,8 @@ Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here
 (add-hook 'vterm-mode-hook (lambda() visual-line-mode -1))
 #+end_src
 
-*** Nov keybindings
+** Nov keybindings
+These are only for the eReader.
 #+begin_src emacs-lisp
 (general-define-key
 :keymaps 'nov-mode-map
@@ -401,6 +402,7 @@ Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here
 #+end_src
 
 ** Search
+Making cmd+f search work more like in other editors. I know, blasphemy.
 #+begin_src emacs-lisp
 (general-define-key "s-f" 'isearch-from-buffer-start)
 (general-define-key
@@ -463,12 +465,13 @@ Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here
 )
 #+end_src
 
-** "It's too..."
+** View
 #+begin_src emacs-lisp
 (general-define-key
 :keymaps 'aytoo-map
 :wk-full-keys nil
 "w" '(visual-fill-column-mode :which-key "wide")
+"n" '(global-display-line-numbers-mode :which-key "line numbers")
 )
 #+end_src
 
@@ -511,8 +514,8 @@ Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(vterm :which-key "terminal")
-"f" '(efar :which-key "file manager")
+"t" '(shell :which-key "terminal")
+;"f" '(efar :which-key "file manager")
 "b" '(eww :which-key "browser")
 )
 #+end_src

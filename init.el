@@ -282,6 +282,7 @@
 :keymaps 'aytoo-map
 :wk-full-keys nil
 "w" '(visual-fill-column-mode :which-key "wide")
+"n" '(global-display-line-numbers-mode :which-key "line numbers")
 )
 
 (general-define-key
@@ -312,8 +313,8 @@
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(vterm :which-key "terminal")
-"f" '(efar :which-key "file manager")
+"t" '(shell :which-key "terminal")
+;"f" '(efar :which-key "file manager")
 "b" '(eww :which-key "browser")
 )
 
