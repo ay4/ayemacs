@@ -1,0 +1,715 @@
+#+title: Dalet Config
+#+property: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+
+
+* Package manager
+All packages in my configuration are handled via [[https://github.com/radian-software/straight.el][straight.el]]. This is a very handy package manager.
+#+begin_src emacs-lisp
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 6))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+#+end_src
+
+
+* Early packages
+We need to load /use-package/ and /org-mode/ before anything else as these are critical packages for further oprations.
+#+begin_src emacs-lisp
+(straight-use-package 'use-package)
+(straight-use-package 'org)
+#+end_src
+
+
+* Tweaks
+
+** Performance
+#+begin_src emacs-lisp
+(setq gc-cons-threshold 100000000)
+(setq read-process-output-max (* 1024 1024)) ;; 1mb
+(add-hook 'after-init-hook #'(lambda ()
+       ;; restore after startup
+       (setq gc-cons-threshold 800000)))
+#+end_src
+
+** Fix a Specific Bug
+#+begin_src emacs-lisp
+(when (version< emacs-version "26.3")
+  (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3"))
+#+end_src
+
+** Create the Custom File and load it
+#+begin_src emacs-lisp
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(unless (file-exists-p custom-file)
+  (write-region "" nil custom-file))
+(load custom-file nil t)
+#+end_src
+
+** Auto-save and Backup files
+#+begin_src emacs-lisp
+(defconst emacs-tmp-dir (expand-file-name (format "emacs%d" (user-uid)) temporary-file-directory))
+(setq
+   backup-by-copying t                                        ; Avoid symlinks
+   delete-old-versions t
+   kept-new-versions 6
+   kept-old-versions 2
+   version-control t
+   auto-save-list-file-prefix emacs-tmp-dir
+   auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t))  ; Change autosave dir to tmp
+   backup-directory-alist `((".*" . ,emacs-tmp-dir)))
+#+end_src
+
+** Get rid of lockfiles
+#+begin_src emacs-lisp
+(setq create-lockfiles nil)
+#+end_src
+
+** Open Emacs Maximized
+#+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+#+end_src
+
+** Load Default Theme
+#+begin_src emacs-lisp
+(if (not custom-enabled-themes)
+    (load-theme 'wheatgrass t))
+#+end_src
+
+
+* My Custom Functions
+
+** Reload-config
+Self-explanatory. Reloads the configuration file of emacs.
+#+begin_src emacs-lisp
+(defun reload-config ()
+  (interactive)
+  (load-file (expand-file-name "init.el" user-emacs-directory)))
+#+end_src
+
+** Generate config and reload it
+#+begin_src emacs-lisp
+(defun generate-config-and-reload ()
+"Generate the init.el and load it again."
+(interactive)
+(org-babel-tangle)
+(reload-config)
+)
+#+end_src
+
+** Close the window & Kill the Buffer
+#+begin_src emacs-lisp
+(defun close-win-kill-buf ()
+  "Simple close the window and kill the buffer in it."
+  (interactive)
+  (kill-buffer)
+  (delete-window))
+#+end_src
+
+** Always Search From Beginning of File
+#+begin_src emacs-lisp
+(defun isearch-from-buffer-start ()
+  (interactive)
+  (goto-char (point-min))
+  (isearch-forward))
+#+end_src
+
+** Show which face is under cursor
+#+begin_src emacs-lisp
+(defun what-face (pos)
+    (interactive "d")
+        (let ((face (or (get-char-property (point) 'read-face-name)
+            (get-char-property (point) 'face))))
+    (if face (message "Face: %s" face) (message "No face at %d" pos))))
+#+end_src
+
+** Russian Keybindings
+#+begin_src emacs-lisp
+(use-package reverse-im
+  :straight t
+  :custom
+  (reverse-im-input-methods
+   '("russian-computer"))
+  :config
+  (reverse-im-mode t))
+#+end_src
+
+
+* Aliases
+#+begin_src emacs-lisp
+(defalias 'open-file 'find-file)
+(defalias 'save-file 'save-buffer)
+(defalias 'close-window 'delete-window)
+(defalias 'close-file 'kill-buffer)
+(defalias 'generate-config 'org-babel-tangle)
+#+end_src
+
+
+* Visuals
+
+** Disable menu-bar, tool-bar, and scroll-bar.
+#+begin_src emacs-lisp
+(if (fboundp 'menu-bar-mode)
+    (menu-bar-mode -1))
+(if (fboundp 'tool-bar-mode)
+    (tool-bar-mode -1))
+(if (fboundp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
+#+end_src
+
+** Set Up Font
+#+begin_src emacs-lisp
+(set-face-attribute 'default nil :font "Victor Mono")
+(set-face-attribute 'default nil :height 140)
+#+end_src
+
+** Load & Choose Themes
+#+begin_src emacs-lisp
+(straight-use-package 'nord-theme)
+(straight-use-package 'gruvbox-theme)
+(straight-use-package 'solarized-theme)
+(straight-use-package 'ayu-theme)
+(straight-use-package 'catppuccin-theme)
+;(load-theme 'nord t)
+;(load-theme 'solarized-dark t)
+;(load-theme 'solarized-light t)
+;(load-theme 'ayu-dark t)
+;(load-theme 'ayu-grey t)
+;(load-theme 'ayu-light t)
+;(load-theme 'gruvbox-dark-medium  t)
+(load-theme 'gruvbox-dark-soft t)
+(load-theme 'catppuccin t)
+(setq catppuccin-flavor 'frappe)
+;(load-theme 'gruvbox-dark-hard t)
+;(load-theme 'gruvbox-light-medium t)
+;(load-theme 'gruvbox-light-soft t)
+;(load-theme 'gruvbox-light-hard t)
+#+end_src
+
+** Set Up Margins
+This produces margins around buffer and ensures they're the same color as theme background.
+#+begin_src emacs-lisp
+(set-face-background 'internal-border (face-attribute 'default :background))
+(set-face-background 'fringe (face-attribute 'default :background))
+(set-frame-parameter nil 'internal-border-width 20)
+#+end_src
+
+** Centering text in Window
+We're using the [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] package, see docs for more.
+#+begin_src emacs-lisp
+(straight-use-package 'visual-fill-column)
+(setq-default visual-fill-column-center-text t)
+(setq-default visual-fill-column-enable-sensible-window-split t)
+(advice-add 'text-scale-adjust :after #'visual-fill-column-adjust)
+(add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
+(global-visual-line-mode 1)
+#+end_src
+
+** Dim Inactive Windows
+We use an amazing package called [[https://github.com/gonewest818/dimmer.el][dimmer.el]]. Examples of its work can also be found [[https://gonewest818.github.io/2020/03/dimmer-gallery/][here]].
+#+begin_src emacs-lisp
+(straight-use-package 'dimmer)
+'(dimmer-adjustment-mode :both)
+'(dimmer-fraction 1.0)
+(add-hook 'after-init-hook (lambda ()
+     (when (fboundp 'dimmer-mode)
+       (dimmer-mode t))))
+#+end_src
+
+** Set Up Window Decorations (Broken)
+This is supposed to regulate borders between windows, but for some reason they're invisible now. Likely their colour is set up bad.
+#+begin_src emacs-lisp
+'(window-divider-default-bottom-width 1)
+'(window-divider-default-places t)
+'(window-divider-default-right-width 1)
+'(window-divider-mode t)
+#+end_src
+
+** Misc
+*** Disable line numbers
+#+begin_src emacs-lisp
+(global-display-line-numbers-mode 0)
+#+end_src
+*** Disable modeline
+#+begin_src emacs-lisp
+(setq-default mode-line-format nil)
+#+end_src
+*** Set cursor type
+Can be "box", "hollow", "bar" or "hbar".
+#+begin_src emacs-lisp
+(setq-default cursor-type 'box)
+#+end_src
+*** Disable startup screen
+#+begin_src emacs-lisp
+(setq inhibit-startup-screen t)
+#+end_src
+***  Make *scratch* buffer blank
+#+begin_src emacs-lisp
+(setq initial-scratch-message "")
+#+end_src
+*** Make window title the buffer name
+#+begin_src emacs-lisp
+(setq-default frame-title-format '("%b"))
+#+end_src
+*** Disable bell sound
+#+begin_src emacs-lisp
+(setq ring-bell-function 'ignore)
+#+end_src
+***  y-or-n-p makes answering questions faster
+#+begin_src emacs-lisp
+(fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+*** Selected text will be overwritten when you start typing
+#+begin_src emacs-lisp
+(delete-selection-mode 1)
+#+end_src
+*** Auto-update buffer if file has changed on disk
+#+begin_src emacs-lisp
+(global-auto-revert-mode t)
+#+end_src
+*** Get rid of indentation
+#+begin_src emacs-lisp
+(electric-indent-mode -1)
+#+end_src
+
+
+* Packages
+** Better keybindings
+By [[https://github.com/noctuid/general.el][general.el]].
+#+begin_src emacs-lisp
+(straight-use-package 'general)
+#+end_src
+
+** Undo-tree, sane undo/redo behavior
+#+begin_src emacs-lisp
+(use-package undo-tree
+  :straight t
+  :init (global-undo-tree-mode)
+  :config (setq-default undo-tree-auto-save-history nil))
+(add-hook 'before-save-hook
+    'delete-trailing-whitespace)
+#+end_src
+
+** Completion framework
+By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/consult][consult]].
+#+begin_src emacs-lisp
+(straight-use-package 'vertico)
+(vertico-mode t)
+(straight-use-package 'consult)
+(global-set-key [rebind switch-to-buffer] #'consult-buffer)
+#+end_src
+
+** CUA-mode
+#+begin_src emacs-lisp
+(cua-mode t)
+#+end_src
+
+** Icons, (X) eFAR. (X) Sunrise COmmander
+=Documentation for efar can be found [[https://github.com/suntsov/efar][here]].=
+
+=We are now using [[https://github.com/sunrise-commander/sunrise-commander][Sunrise Commander.]]=
+
+**** TODO Best of we simpy set up dired properly
+#+begin_src emacs-lisp
+(straight-use-package 'all-the-icons)
+;(straight-use-package 'efar)
+;(straight-use-package 'sunrise-commander)
+#+end_src
+
+** Which-key
+See documentation [[https://github.com/justbur/emacs-which-key][here]].
+#+begin_src emacs-lisp
+(straight-use-package 'which-key)
+(which-key-mode)
+(setq which-key-idle-delay 0)
+#+end_src
+
+** Avy jumpng (Broken)
+#+begin_src emacs-lisp
+  (defun avy-line-end-of-line ()
+    (interactive)
+    (avy-goto-line)
+    (move-end-of-line)
+  )
+  (straight-use-package 'avy)
+  (setq avy-keys '(?1 ?2 ?3))
+  (setq avy-background t)
+#+end_src
+
+** Ereader
+Both of these read ePub books and aren't particularly well documented.
+#+begin_src emacs-lisp
+(straight-use-package 'nov)
+(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+(setq nov-variable-pitch nil)
+#+end_src
+
+** Better terminal
+Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here]].
+#+begin_src emacs-lisp
+;(add-to-list 'load-path "~/.emacs.d")
+(straight-use-package 'vterm)
+(add-hook 'vterm-mode-hook (lambda() visual-line-mode -1))
+#+end_src
+
+*** Nov keybindings
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'nov-mode-map
+"SPC" nil "S-SPC" nil "q" nil "w" nil "s" nil "a" nil "d" nil "[" nil "]" nil "t" nil "l" nil "r" nil "<left>" nil "<right>" nil "<up>" nil "<down>" nil
+)
+(general-define-key
+:keymaps 'nov-mode-map
+"SPC" 'nov-scroll-up
+"s" 'nov-scroll-up
+"S-SPC" 'nov-scroll-down
+"w" 'nov-scroll-down
+"<home>" 'nov-goto-toc
+"a" 'nov-previous-document
+"d" 'nov-next-document
+)
+#+end_src
+
+
+* General keybindings
+
+** Unsetting unnecessary keys
+#+begin_src emacs-lisp
+(general-define-key "s-s" nil "C-x h" nil "C-a" nil "C-e" nil "C-x <right>" nil "C-x C-c" nil "C-g" nil "s-o" nil "M-w" nil "s-q" nil)
+(general-define-key
+:keymaps 'isearch-mode-map
+"C-c" nil "C-v" nil "C-x <timeout>" nil "C-z" nil)
+(general-define-key
+:keymaps 'cua--cua-keys-keymap
+"C-c <timeout>" nil "<escape>" nil "<return>" nil)
+#+end_src
+
+** UI & Files
+#+begin_src emacs-lisp
+(general-define-key
+"s-p" 'execute-extended-command
+"s-s" 'save-buffer
+"s-q" 'kill-emacs
+)
+#+end_src
+
+** Search
+#+begin_src emacs-lisp
+(general-define-key "s-f" 'isearch-from-buffer-start)
+(general-define-key
+:keymaps 'isearch-mode-map
+"<return>" 'isearch-repeat-forward
+"<escape>" 'isearch-exit
+)
+#+end_src
+
+** Copy-paste, moving around
+#+begin_src emacs-lisp
+(general-define-key "s-a" 'mark-whole-buffer)
+(general-define-key
+:keymaps 'cua--cua-keys-keymap
+"s-c" 'copy-region-as-kill
+"s-v" 'yank
+"s-x" 'kill-region
+"s-z" 'undo
+)
+(general-define-key
+"s-<left>" 'move-beginning-of-line
+"s-<right>" 'move-end-of-line
+"s-\\" 'avy-goto-line
+)
+#+end_src
+
+** Windows & buffers
+#+begin_src emacs-lisp
+(general-define-key
+"s-t" 'split-window-right
+"s-T" 'split-window-below
+"s-{" 'previous-multiframe-window
+"s-}" 'next-multiframe-window
+"s-w" 'close-win-kill-buf
+"M-w" 'delete-other-windows
+)
+#+end_src
+
+** Autocompletion
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'minibuffer-local-map
+"<escape>" 'abort-recursive-edit
+)
+#+end_src
+
+
+* Aymenu
+
+** High-level menu
+#+begin_src emacs-lisp
+(defconst ayleader "s-o")
+(general-define-key
+:prefix ayleader
+"b" '(:prefix-command aybuffer-map :which-key "buffers")
+"f" '(:prefix-command ayfile-map :which-key "files")
+"a" '(:prefix-command ayapp-map :which-key "apps")
+"s" '(:prefix-command aysystem-map :which-key "system")
+"v" '(:prefix-command aytoo-map :which-key "view")
+)
+#+end_src
+
+** "It's too..."
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'aytoo-map
+:wk-full-keys nil
+"w" '(visual-fill-column-mode :which-key "wide")
+)
+#+end_src
+
+** Buffers
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'aybuffer-map
+:wk-full-keys nil
+"l" '(switch-to-buffer :which-key "list buffers")
+"p" '(previous-buffer :which-key "previous buffer")
+"n" '(next-buffer :which-key "next buffer")
+"<left>" '(previous-buffer :which-key "previous buffer")
+"<right>" '(next-buffer :which-key "next buffer")
+)
+#+end_src
+
+** Files
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'ayfile-map
+:wk-full-keys nil
+"s" '(save-buffer :which-key "save file")
+"n" '(switch-to-buffer :which-key "new file")
+"o" '(find-file :which-key "open file")
+)
+#+end_src
+
+** System
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'aysystem-map
+:wk-full-keys nil
+"c" '((lambda()(interactive)(find-file "~/.emacs.d/README.org")) :which-key "open config")
+"r" '(generate-config-and-reload :which-key "generate config and reload it")
+)
+#+end_src
+
+** Apps
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'ayapp-map
+:wk-full-keys nil
+"t" '(vterm :which-key "terminal")
+"f" '(efar :which-key "file manager")
+"b" '(eww :which-key "browser")
+)
+#+end_src
+
+** Org-mode Inserts
+#+begin_src emacs-lisp
+(general-define-key
+:prefix ayleader
+:keymaps 'org-mode-map
+"i" '(:prefix-command ayorg-insert-map :which-key "insert")
+)
+
+(general-define-key
+:keymaps 'ayorg-insert-map
+:wk-full-keys nil
+"h" '(:prefix-command ayorg-insert-header-map :which-key "header")
+"t" '((lambda()(interactive)(insert "***** TODO ")) :which-key "TODO")
+"d" '((lambda()(interactive)(insert (shell-command-to-string "echo -n $(date +%d.%m.%Y)"))) :which-key "Current date")
+)
+
+(general-define-key
+:keymaps 'ayorg-insert-header-map
+:wk-full-keys nil
+"1" '((lambda()(interactive)(insert "* ")) :which-key "H1")
+"2" '((lambda()(interactive)(insert "** ")) :which-key "H2")
+"3" '((lambda()(interactive)(insert "*** ")) :which-key "H3")
+"4" '((lambda()(interactive)(insert "**** ")) :which-key "H4")
+"5" '((lambda()(interactive)(insert "***** ")) :which-key "H5")
+)
+#+end_src
+
+
+* Launching apps (Broken!)
+This is temporarily broken, at least on mac. This was intended for Linux and is conflicting with ⌥+space keybinding the mac uses. Maybe it should stay this way.
+
+** Run "Alfred"
+#+begin_src emacs-lisp
+(defun applauncher ()
+  "Run external apps"
+(interactive)
+(require 'subr-x)
+(start-process "Temp" "Temp" (string-trim-right (read-shell-command "→  "))))
+#+end_src
+
+** Launch Nyxt browser
+(Wasn't tested on Mac)
+#+begin_src emacs-lisp
+(defun launch-browser ()
+"Run Nyxt"
+(interactive)
+(start-process "Temp" "Temp" "nyxt"))
+#+end_src
+
+** Hotkeys
+#+begin_src emacs-lisp
+(define-key global-map (kbd "M-SPC") nil)
+(define-key global-map (kbd "M-SPC") '("Run commands" . applauncher))
+#+end_src
+
+
+* Org-mode
+
+** TODOS
+**** TODO Make a ayMenu thing to insert everything
+**** TODO Make a nice table of contents
+
+** Faces & Line-spacing
+#+begin_src emacs-lisp
+ (setq-default line-spacing 4)
+#+end_src
+
+** Begin Config
+#+begin_src emacs-lisp
+(with-eval-after-load "org"
+#+end_src
+
+** New lines and indentation behaviour
+Customizing org-blank-before-new-entry disables org's magic decision making around new lines, and lets me maintain clean org documents.
+
+Customizing org-cycle-separator-lines maintains visible empty lines while toggling heading contents.
+
+#+begin_src emacs-lisp
+(customize-set-variable 'org-blank-before-new-entry
+                        '((heading . nil)
+                          (plain-list-item . nil)))
+(setq org-cycle-separator-lines 1)
+#+end_src
+
+Make indent-mode the default.
+
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook 'org-indent-mode)
+#+end_src
+
+** Enable structure templates
+I.e. things that allow pressing <s+TAB to result in a code block.
+Full list:
+- a ‘#+BEGIN_EXPORT ascii’ … ‘#+END_EXPORT’
+- c ‘#+BEGIN_CENTER’ … ‘#+END_CENTER’
+- C ‘#+BEGIN_COMMENT’ … ‘#+END_COMMENT’
+- e ‘#+BEGIN_EXAMPLE’ … ‘#+END_EXAMPLE’
+- E ‘#+BEGIN_EXPORT’ … ‘#+END_EXPORT’
+- h ‘#+BEGIN_EXPORT html’ … ‘#+END_EXPORT’
+- l ‘#+BEGIN_EXPORT latex’ … ‘#+END_EXPORT’
+- q ‘#+BEGIN_QUOTE’ … ‘#+END_QUOTE’
+- s ‘#+BEGIN_SRC’ … ‘#+END_SRC’
+- v ‘#+BEGIN_VERSE’ … ‘#+END_VERSE’
+#+begin_src emacs-lisp
+(require 'org-tempo)
+#+end_src
+
+** Unmap Unneeded Keys
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'org-mode-map
+"M-S-<left>" nil
+"M-S-<right>" nil
+"M-<left>" nil
+"M-<right>" nil
+"S-<left>" nil
+"S-<right>" nil
+"S-<up>" nil
+"S-<down>" nil
+)
+#+end_src
+
+** Normal movement and selection
+#+begin_src emacs-lisp
+(setq org-support-shift-select 1)
+#+end_src
+
+** Promotion and demotion of lists and headers
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'org-mode-map
+"M-<down>" 'org-shiftright
+"M-<up>" 'org-shiftleft
+"s-]" 'org-metaright
+"s-[" 'org-metaleft
+)
+#+end_src
+
+** Opening links
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'org-mode-map
+"s-<return>" 'org-open-at-point
+)
+#+end_src
+
+** Bold, italic
+#+begin_src emacs-lisp
+(general-define-key
+:keymaps 'org-mode-map
+"s-b" (lambda() (interactive) (org-emphasize ?\*))
+"s-i" (lambda() (interactive) (org-emphasize ?\/))
+"s-k" 'org-insert-link
+)
+#+end_src
+
+** Switch between preview and literal
+By the wonderful [[https://github.com/awth13/org-appear][org-appear]].
+#+begin_src emacs-lisp
+(straight-use-package 'org-appear)
+(setq org-appear-autoemphasis 1)
+(setq org-hide-emphasis-markers 1)
+(setq org-appear-autolinks 1)
+(add-hook 'org-mode-hook 'org-appear-mode)
+#+end_src
+
+** End Config
+#+begin_src emacs-lisp
+)
+#+end_src
+
+
+* Misc
+#+begin_src emacs-lisp
+(setq-default major-mode
+              (lambda () ; guess major mode from file name
+                (unless buffer-file-name
+                  (let ((buffer-file-name (buffer-name)))
+                    (set-auto-mode)))))
+(setq confirm-kill-emacs #'yes-or-no-p)
+(setq window-resize-pixelwise t)
+(setq frame-resize-pixelwise t)
+(save-place-mode t)
+(savehist-mode t)
+(recentf-mode t)
+(defalias 'yes-or-no #'y-or-n-p)
+#+end_src
+
+
+* Stuff configured via GUI
+For now, all the org visuals are there. Ideally, of course, we would like to get rid of anything in that file.
+#+begin_src emacs-lisp
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
+#+end_src
