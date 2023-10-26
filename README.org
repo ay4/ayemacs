@@ -1,6 +1,27 @@
 #+title: Dalet Config
 #+property: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
+* Emacs daemon
+For everything to work properly, I start emacs-daemon as emacs --daemon=ayserver and change my emacs.app to the following:
+#+begin_src bash
+# Run the command and check its exit code
+/usr/local/bin/emacsclient -s ayservername -e '(+ 1 0)' >/dev/null 2>&1
+
+exit_code=$?
+
+# Check the exit code and launch the appropriate commands
+if [ $exit_code -eq 0 ]; then
+/usr/local/bin/emacsclient -s ayservername -n -e "(> (length (frame-list)) 1)" | grep -q t
+if [ "$?" = "1" ]; then
+    /usr/local/bin/emacsclient -s ayservername -c -n -a "" "$@" >/dev/null 2>&1 &
+else
+    /usr/local/bin/emacsclient -s ayservername -n -a "" "$@" >/dev/null 2>&1 &
+fi
+else
+    # Launch emacs daemon and wait for it to start
+    /usr/local/bin/emacs --daemon=ayservername ; /usr/local/bin/emacsclient -s ayservername -c "$@" >/dev/null 2>&1 &
+fi
+#+end_src
 
 * Package manager
 All packages in my configuration are handled via [[https://github.com/radian-software/straight.el][straight.el]]. This is a very handy package manager.
