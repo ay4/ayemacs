@@ -3,7 +3,7 @@
 
 * Emacs daemon
 For everything to work properly, I start emacs-daemon as emacs --daemon=ayserver and change my emacs.app to the following:
-#+begin_src bash
+#+begin_src sh
 # Run the command and check its exit code
 /usr/local/bin/emacsclient -s ayservername -e '(+ 1 0)' >/dev/null 2>&1
 
