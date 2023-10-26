@@ -42,13 +42,44 @@
 (setq create-lockfiles nil)
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
+(setq ns-pop-up-frames nil)
 
 (if (not custom-enabled-themes)
     (load-theme 'wheatgrass t))
 
+(defun open-inbox ()
+  (interactive)
+  (find-file "/Users/neiaglov/infogarden/inbox.org")
+  (end-of-buffer))
+
+(defun set-exec-path-from-shell-PATH ()
+  (interactive)
+  (let ((path-from-shell (replace-regexp-in-string
+			  "[ \t\n]*$" "" (shell-command-to-string
+					  "$SHELL --login -c 'echo $PATH'"
+						    ))))
+    (setenv "PATH" path-from-shell)
+    (setq exec-path (split-string path-from-shell path-separator))))
+
+(set-exec-path-from-shell-PATH)
+
 (defun reload-config ()
   (interactive)
   (load-file (expand-file-name "init.el" user-emacs-directory)))
+
+(defun my-write-copy-to-file ()
+  "Write a copy of the current buffer or region to a file."
+  (interactive)
+  (let* ((curr (buffer-file-name))
+         (new (read-file-name
+               "Copy to file: " nil nil nil
+               (and curr (file-name-nondirectory curr))))
+         (mustbenew (if (and curr (file-equal-p new curr)) 'excl t)))
+    (if (use-region-p)
+        (write-region (region-beginning) (region-end) new nil nil nil mustbenew)
+      (save-restriction
+        (widen)
+        (write-region (point-min) (point-max) new nil nil nil mustbenew)))))
 
 (defun generate-config-and-reload ()
 "Generate the init.el and load it again."
@@ -98,6 +129,8 @@
 (set-face-attribute 'default nil :font "Victor Mono")
 (set-face-attribute 'default nil :height 140)
 
+(setq shr-use-fonts nil)
+
 (straight-use-package 'nord-theme)
 (straight-use-package 'gruvbox-theme)
 (straight-use-package 'solarized-theme)
@@ -110,7 +143,7 @@
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
 ;(load-theme 'gruvbox-dark-medium  t)
-(load-theme 'gruvbox-dark-soft t)
+;(load-theme 'gruvbox-dark-soft t)
 (load-theme 'catppuccin t)
 (setq catppuccin-flavor 'frappe)
 ;(load-theme 'gruvbox-dark-hard t)
@@ -120,7 +153,13 @@
 
 (set-face-background 'internal-border (face-attribute 'default :background))
 (set-face-background 'fringe (face-attribute 'default :background))
-(set-frame-parameter nil 'internal-border-width 20)
+(set-frame-parameter nil 'internal-border-width 40)
+
+(defun setup-frame (frame)
+  (with-selected-frame frame
+    (set-frame-parameter nil 'internal-border-width 40)))
+
+(add-hook 'after-make-frame-functions #'setup-frame)
 
 (straight-use-package 'visual-fill-column)
 (setq-default visual-fill-column-center-text t)
@@ -163,6 +202,11 @@
 
 (electric-indent-mode -1)
 
+(straight-use-package 'telega)
+(setq telega-use-images 1)
+
+(straight-use-package 'org-mac-link)
+
 (straight-use-package 'general)
 
 (use-package undo-tree
@@ -180,20 +224,13 @@
 (cua-mode t)
 
 (straight-use-package 'all-the-icons)
-;(straight-use-package 'efar)
-;(straight-use-package 'sunrise-commander)
 
 (straight-use-package 'which-key)
 (which-key-mode)
 (setq which-key-idle-delay 0)
 
-(defun avy-line-end-of-line ()
-  (interactive)
-  (avy-goto-line)
-  (move-end-of-line)
-)
 (straight-use-package 'avy)
-(setq avy-keys '(?1 ?2 ?3))
+(setq avy-keys '(?i ?e ?a ?h))
 (setq avy-background t)
 
 (straight-use-package 'nov)
@@ -230,7 +267,9 @@
 (general-define-key
 "s-p" 'execute-extended-command
 "s-s" 'save-buffer
-"s-q" 'kill-emacs
+;"s-q" 'kill-emacs
+"s-q" 'save-buffers-kill-terminal
+
 )
 
 (general-define-key "s-f" 'isearch-from-buffer-start)
@@ -251,7 +290,7 @@
 (general-define-key
 "s-<left>" 'move-beginning-of-line
 "s-<right>" 'move-end-of-line
-"s-\\" 'avy-goto-line
+"s-l" 'avy-goto-line
 )
 
 (general-define-key
@@ -269,13 +308,16 @@
 )
 
 (defconst ayleader "s-o")
-(general-define-key
-:prefix ayleader
-"b" '(:prefix-command aybuffer-map :which-key "buffers")
-"f" '(:prefix-command ayfile-map :which-key "files")
-"a" '(:prefix-command ayapp-map :which-key "apps")
-"s" '(:prefix-command aysystem-map :which-key "system")
-"v" '(:prefix-command aytoo-map :which-key "view")
+  (general-define-key
+  :prefix ayleader
+  :wk-full-keys nil
+  "b" '(:prefix-command aybuffer-map :which-key "buffers")
+  "f" '(:prefix-command ayfile-map :which-key "files")
+  "a" '(:prefix-command ayapp-map :which-key "apps")
+  "s" '(:prefix-command aysystem-map :which-key "system")
+  "v" '(:prefix-command aytoo-map :which-key "view")
+  "s-o" '(open-inbox :which-key "open inbox")
+  "t" '(:keymap telega-prefix-map :which-key "telegram")
 )
 
 (general-define-key
@@ -301,6 +343,7 @@
 "s" '(save-buffer :which-key "save file")
 "n" '(switch-to-buffer :which-key "new file")
 "o" '(find-file :which-key "open file")
+"a" '(my-write-copy-to-file :which-key "save as")
 )
 
 (general-define-key
@@ -314,26 +357,31 @@
 :keymaps 'ayapp-map
 :wk-full-keys nil
 "t" '(shell :which-key "terminal")
-;"f" '(efar :which-key "file manager")
+"l" '(org-mac-link-get-link :which-key "get open links")
 "b" '(eww :which-key "browser")
 )
 
 (general-define-key
 :prefix ayleader
 :keymaps 'org-mode-map
+:major-modes t
+:wk-full-keys nil
 "i" '(:prefix-command ayorg-insert-map :which-key "insert")
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-map
+:major-modes 'org-mode
 :wk-full-keys nil
 "h" '(:prefix-command ayorg-insert-header-map :which-key "header")
-"t" '((lambda()(interactive)(insert "***** TODO ")) :which-key "TODO")
 "d" '((lambda()(interactive)(insert (shell-command-to-string "echo -n $(date +%d.%m.%Y)"))) :which-key "Current date")
+"t" '((lambda()(interactive)(insert "***** TODO")) :keymaps 'ayorg-insert-map :which-key "todogram")
+
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-header-map
+:major-modes t
 :wk-full-keys nil
 "1" '((lambda()(interactive)(insert "* ")) :which-key "H1")
 "2" '((lambda()(interactive)(insert "** ")) :which-key "H2")
@@ -379,6 +427,7 @@
 "S-<right>" nil
 "S-<up>" nil
 "S-<down>" nil
+"t" nil
 )
 
 (setq org-support-shift-select 1)

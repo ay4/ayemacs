@@ -75,6 +75,7 @@ We need to load /use-package/ and /org-mode/ before anything else as these are c
 ** Open Emacs Maximized
 #+begin_src emacs-lisp
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
+(setq ns-pop-up-frames nil)
 #+end_src
 
 ** Load Default Theme
@@ -86,12 +87,55 @@ We need to load /use-package/ and /org-mode/ before anything else as these are c
 
 * My Custom Functions
 
+** Open the capture file
+Opens a file and jumps to its end
+#+begin_src emacs-lisp
+(defun open-inbox ()
+  (interactive)
+  (find-file "/Users/neiaglov/infogarden/inbox.org")
+  (end-of-buffer))
+#+end_src
+
+** Set ‘exec-path’ to match shell PATH automatically
+#+begin_src emacs-lisp
+(defun set-exec-path-from-shell-PATH ()
+  (interactive)
+  (let ((path-from-shell (replace-regexp-in-string
+			  "[ \t\n]*$" "" (shell-command-to-string
+					  "$SHELL --login -c 'echo $PATH'"
+						    ))))
+    (setenv "PATH" path-from-shell)
+    (setq exec-path (split-string path-from-shell path-separator))))
+
+(set-exec-path-from-shell-PATH)
+#+end_src
+
 ** Reload-config
 Self-explanatory. Reloads the configuration file of emacs.
 #+begin_src emacs-lisp
 (defun reload-config ()
   (interactive)
   (load-file (expand-file-name "init.el" user-emacs-directory)))
+#+end_src
+
+** Save As
+- Offer the current filename for editing by default, as personally I often want a variation on that, and it's slightly annoying not having it there to begin with.
+- Don't overwrite an existing file without asking the user, and never overwrite the current buffer's file.
+- If the region is active, write the region; otherwise write the entire (widened) buffer.
+#+begin_src emacs-lisp
+(defun my-write-copy-to-file ()
+  "Write a copy of the current buffer or region to a file."
+  (interactive)
+  (let* ((curr (buffer-file-name))
+         (new (read-file-name
+               "Copy to file: " nil nil nil
+               (and curr (file-name-nondirectory curr))))
+         (mustbenew (if (and curr (file-equal-p new curr)) 'excl t)))
+    (if (use-region-p)
+        (write-region (region-beginning) (region-end) new nil nil nil mustbenew)
+      (save-restriction
+        (widen)
+        (write-region (point-min) (point-max) new nil nil nil mustbenew)))))
 #+end_src
 
 ** Generate config and reload it
@@ -170,6 +214,11 @@ Self-explanatory. Reloads the configuration file of emacs.
 (set-face-attribute 'default nil :height 140)
 #+end_src
 
+** Set up eww fonts
+#+begin_src emacs-lisp
+(setq shr-use-fonts nil)
+#+end_src
+
 ** Load & Choose Themes
 #+begin_src emacs-lisp
 (straight-use-package 'nord-theme)
@@ -184,7 +233,7 @@ Self-explanatory. Reloads the configuration file of emacs.
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
 ;(load-theme 'gruvbox-dark-medium  t)
-(load-theme 'gruvbox-dark-soft t)
+;(load-theme 'gruvbox-dark-soft t)
 (load-theme 'catppuccin t)
 (setq catppuccin-flavor 'frappe)
 ;(load-theme 'gruvbox-dark-hard t)
@@ -195,10 +244,19 @@ Self-explanatory. Reloads the configuration file of emacs.
 
 ** Set Up Margins
 This produces margins around buffer and ensures they're the same color as theme background.
+
+The weird setup with the defun is needed because of the emacs daemon. It runs init.el when it starts and before any frame has been created. So, to apply this to any new frames, we must create a hook.
+
 #+begin_src emacs-lisp
 (set-face-background 'internal-border (face-attribute 'default :background))
 (set-face-background 'fringe (face-attribute 'default :background))
-(set-frame-parameter nil 'internal-border-width 20)
+(set-frame-parameter nil 'internal-border-width 40)
+
+(defun setup-frame (frame)
+  (with-selected-frame frame
+    (set-frame-parameter nil 'internal-border-width 40)))
+
+(add-hook 'after-make-frame-functions #'setup-frame)
 #+end_src
 
 ** Centering text in Window
@@ -281,6 +339,19 @@ Can be "box", "hollow", "bar" or "hbar".
 
 
 * Packages
+
+** Test install of Telegram
+#+begin_src emacs-lisp
+(straight-use-package 'telega)
+(setq telega-use-images 1)
+#+end_src
+
+** Test install of org-mac-link
+Allows to get links from open apps, most useful right now - Safari.
+#+begin_src emacs-lisp
+(straight-use-package 'org-mac-link)
+#+end_src
+
 ** Better keybindings
 By [[https://github.com/noctuid/general.el][general.el]].
 #+begin_src emacs-lisp
@@ -311,16 +382,9 @@ By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/
 (cua-mode t)
 #+end_src
 
-** Icons, (X) eFAR. (X) Sunrise COmmander
-=Documentation for efar can be found [[https://github.com/suntsov/efar][here]].=
-
-=We are now using [[https://github.com/sunrise-commander/sunrise-commander][Sunrise Commander.]]=
-
-**** TODO Best of we simpy set up dired properly
+** Icons for dired
 #+begin_src emacs-lisp
 (straight-use-package 'all-the-icons)
-;(straight-use-package 'efar)
-;(straight-use-package 'sunrise-commander)
 #+end_src
 
 ** Which-key
@@ -331,15 +395,10 @@ See documentation [[https://github.com/justbur/emacs-which-key][here]].
 (setq which-key-idle-delay 0)
 #+end_src
 
-** Avy jumpng (Broken)
+** Avy jumpng
 #+begin_src emacs-lisp
-  (defun avy-line-end-of-line ()
-    (interactive)
-    (avy-goto-line)
-    (move-end-of-line)
-  )
   (straight-use-package 'avy)
-  (setq avy-keys '(?1 ?2 ?3))
+  (setq avy-keys '(?i ?e ?a ?h))
   (setq avy-background t)
 #+end_src
 
@@ -393,11 +452,14 @@ These are only for the eReader.
 #+end_src
 
 ** UI & Files
+Quitting is for the emacs-server setup
 #+begin_src emacs-lisp
 (general-define-key
 "s-p" 'execute-extended-command
 "s-s" 'save-buffer
-"s-q" 'kill-emacs
+;"s-q" 'kill-emacs
+"s-q" 'save-buffers-kill-terminal
+
 )
 #+end_src
 
@@ -425,7 +487,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 (general-define-key
 "s-<left>" 'move-beginning-of-line
 "s-<right>" 'move-end-of-line
-"s-\\" 'avy-goto-line
+"s-l" 'avy-goto-line
 )
 #+end_src
 
@@ -454,15 +516,19 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 
 ** High-level menu
 #+begin_src emacs-lisp
-(defconst ayleader "s-o")
-(general-define-key
-:prefix ayleader
-"b" '(:prefix-command aybuffer-map :which-key "buffers")
-"f" '(:prefix-command ayfile-map :which-key "files")
-"a" '(:prefix-command ayapp-map :which-key "apps")
-"s" '(:prefix-command aysystem-map :which-key "system")
-"v" '(:prefix-command aytoo-map :which-key "view")
+  (defconst ayleader "s-o")
+  (general-define-key
+  :prefix ayleader
+  :wk-full-keys nil
+  "b" '(:prefix-command aybuffer-map :which-key "buffers")
+  "f" '(:prefix-command ayfile-map :which-key "files")
+  "a" '(:prefix-command ayapp-map :which-key "apps")
+  "s" '(:prefix-command aysystem-map :which-key "system")
+  "v" '(:prefix-command aytoo-map :which-key "view")
+  "s-o" '(open-inbox :which-key "open inbox")
+  "t" '(:keymap telega-prefix-map :which-key "telegram")
 )
+
 #+end_src
 
 ** View
@@ -496,6 +562,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 "s" '(save-buffer :which-key "save file")
 "n" '(switch-to-buffer :which-key "new file")
 "o" '(find-file :which-key "open file")
+"a" '(my-write-copy-to-file :which-key "save as")
 )
 #+end_src
 
@@ -515,29 +582,35 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 :keymaps 'ayapp-map
 :wk-full-keys nil
 "t" '(shell :which-key "terminal")
-;"f" '(efar :which-key "file manager")
+"l" '(org-mac-link-get-link :which-key "get open links")
 "b" '(eww :which-key "browser")
 )
 #+end_src
+
 
 ** Org-mode Inserts
 #+begin_src emacs-lisp
 (general-define-key
 :prefix ayleader
 :keymaps 'org-mode-map
+:major-modes t
+:wk-full-keys nil
 "i" '(:prefix-command ayorg-insert-map :which-key "insert")
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-map
+:major-modes 'org-mode
 :wk-full-keys nil
 "h" '(:prefix-command ayorg-insert-header-map :which-key "header")
-"t" '((lambda()(interactive)(insert "***** TODO ")) :which-key "TODO")
 "d" '((lambda()(interactive)(insert (shell-command-to-string "echo -n $(date +%d.%m.%Y)"))) :which-key "Current date")
+"t" '((lambda()(interactive)(insert "***** TODO")) :keymaps 'ayorg-insert-map :which-key "todogram")
+
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-header-map
+:major-modes t
 :wk-full-keys nil
 "1" '((lambda()(interactive)(insert "* ")) :which-key "H1")
 "2" '((lambda()(interactive)(insert "** ")) :which-key "H2")
@@ -639,6 +712,7 @@ Full list:
 "S-<right>" nil
 "S-<up>" nil
 "S-<down>" nil
+"t" nil
 )
 #+end_src
 
