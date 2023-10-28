@@ -142,10 +142,10 @@
 ;(load-theme 'ayu-dark t)
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
-;(load-theme 'gruvbox-dark-medium  t)
+(load-theme 'gruvbox-dark-medium  t)
 ;(load-theme 'gruvbox-dark-soft t)
-(load-theme 'catppuccin t)
-(setq catppuccin-flavor 'frappe)
+;(load-theme 'catppuccin t)
+;(setq catppuccin-flavor 'frappe)
 ;(load-theme 'gruvbox-dark-hard t)
 ;(load-theme 'gruvbox-light-medium t)
 ;(load-theme 'gruvbox-light-soft t)
@@ -226,8 +226,8 @@
 (straight-use-package 'all-the-icons)
 
 (straight-use-package 'which-key)
-(which-key-mode)
 (setq which-key-idle-delay 0)
+(which-key-mode)
 
 (straight-use-package 'avy)
 (setq avy-keys '(?i ?e ?a ?h))
@@ -264,11 +264,16 @@
 :keymaps 'cua--cua-keys-keymap
 "C-c <timeout>" nil "<escape>" nil "<return>" nil)
 
+(defun close-buffers-quit-client ()
+  (interactive)
+  (save-buffers-kill-terminal)
+  (end-of-buffer))
+
 (general-define-key
 "s-p" 'execute-extended-command
 "s-s" 'save-buffer
-;"s-q" 'kill-emacs
-"s-q" 'save-buffers-kill-terminal
+"s-q" 'kill-emacs
+;"s-q" 'close-buffers-quit-client
 
 )
 
@@ -330,7 +335,7 @@
 (general-define-key
 :keymaps 'aybuffer-map
 :wk-full-keys nil
-"l" '(switch-to-buffer :which-key "list buffers")
+"l" '(consult-buffer :which-key "list buffers")
 "p" '(previous-buffer :which-key "previous buffer")
 "n" '(next-buffer :which-key "next buffer")
 "<left>" '(previous-buffer :which-key "previous buffer")
@@ -376,18 +381,26 @@
 "h" '(:prefix-command ayorg-insert-header-map :which-key "header")
 "d" '((lambda()(interactive)(insert (shell-command-to-string "echo -n $(date +%d.%m.%Y)"))) :which-key "Current date")
 "t" '((lambda()(interactive)(insert "***** TODO")) :keymaps 'ayorg-insert-map :which-key "todogram")
-
+"s" '(:prefix-command ayorg-insert-source-map :which-key "source code")
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-header-map
-:major-modes t
 :wk-full-keys nil
 "1" '((lambda()(interactive)(insert "* ")) :which-key "H1")
 "2" '((lambda()(interactive)(insert "** ")) :which-key "H2")
 "3" '((lambda()(interactive)(insert "*** ")) :which-key "H3")
 "4" '((lambda()(interactive)(insert "**** ")) :which-key "H4")
 "5" '((lambda()(interactive)(insert "***** ")) :which-key "H5")
+)
+
+(general-define-key
+:keymaps 'ayorg-insert-source-map
+:wk-full-keys nil
+"p" '((lambda()(interactive)(insert "#+begin_src python")) :which-key "python")
+"s" '((lambda()(interactive)(insert "#+begin_src sh")) :which-key "shell")
+"l" '((lambda()(interactive)(insert "#+begin_src emacs-lisp")) :which-key "lisp")
+"e" '((lambda()(interactive)(insert "#+end_src")) :which-key "end block")
 )
 
 (defun applauncher ()

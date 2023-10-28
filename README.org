@@ -1,5 +1,6 @@
 #+title: Dalet Config
 #+property: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+#+STARTUP: overview
 
 * Emacs daemon
 For everything to work properly, I start emacs-daemon as emacs --daemon=ayserver and change my emacs.app to the following:
@@ -13,7 +14,7 @@ exit_code=$?
 if [ $exit_code -eq 0 ]; then
 /usr/local/bin/emacsclient -s ayservername -n -e "(> (length (frame-list)) 1)" | grep -q t
 if [ "$?" = "1" ]; then
-    /usr/local/bin/emacsclient -s ayservername -c -n -a "" "$@" >/dev/null 2>&1 &
+    /usr/local/bin/emacsclient -s ayservername -e '(x-focus-frame nil)' -c -n -a "" "$@" >/dev/null 2>&1 &
 else
     /usr/local/bin/emacsclient -s ayservername -n -a "" "$@" >/dev/null 2>&1 &
 fi
@@ -253,10 +254,10 @@ Self-explanatory. Reloads the configuration file of emacs.
 ;(load-theme 'ayu-dark t)
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
-;(load-theme 'gruvbox-dark-medium  t)
+(load-theme 'gruvbox-dark-medium  t)
 ;(load-theme 'gruvbox-dark-soft t)
-(load-theme 'catppuccin t)
-(setq catppuccin-flavor 'frappe)
+;(load-theme 'catppuccin t)
+;(setq catppuccin-flavor 'frappe)
 ;(load-theme 'gruvbox-dark-hard t)
 ;(load-theme 'gruvbox-light-medium t)
 ;(load-theme 'gruvbox-light-soft t)
@@ -412,8 +413,8 @@ By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/
 See documentation [[https://github.com/justbur/emacs-which-key][here]].
 #+begin_src emacs-lisp
 (straight-use-package 'which-key)
-(which-key-mode)
 (setq which-key-idle-delay 0)
+(which-key-mode)
 #+end_src
 
 ** Avy jumpng
@@ -473,13 +474,21 @@ These are only for the eReader.
 #+end_src
 
 ** UI & Files
-Quitting is for the emacs-server setup
+Quitting is for the emacs-server setup.
+
+Notably, kill-emacs will kill both the client and the server. What I do to countervent that is constantly restarting the server via the KeepAlive setting of launchd. Why? Well, because it seems there's no nice way to exit the client without leaving buffers in or deleting minibuffer.
+
 #+begin_src emacs-lisp
+(defun close-buffers-quit-client ()
+  (interactive)
+  (save-buffers-kill-terminal)
+  (end-of-buffer))
+
 (general-define-key
 "s-p" 'execute-extended-command
 "s-s" 'save-buffer
-;"s-q" 'kill-emacs
-"s-q" 'save-buffers-kill-terminal
+"s-q" 'kill-emacs
+;"s-q" 'close-buffers-quit-client
 
 )
 #+end_src
@@ -567,7 +576,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 (general-define-key
 :keymaps 'aybuffer-map
 :wk-full-keys nil
-"l" '(switch-to-buffer :which-key "list buffers")
+"l" '(consult-buffer :which-key "list buffers")
 "p" '(previous-buffer :which-key "previous buffer")
 "n" '(next-buffer :which-key "next buffer")
 "<left>" '(previous-buffer :which-key "previous buffer")
@@ -626,12 +635,11 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 "h" '(:prefix-command ayorg-insert-header-map :which-key "header")
 "d" '((lambda()(interactive)(insert (shell-command-to-string "echo -n $(date +%d.%m.%Y)"))) :which-key "Current date")
 "t" '((lambda()(interactive)(insert "***** TODO")) :keymaps 'ayorg-insert-map :which-key "todogram")
-
+"s" '(:prefix-command ayorg-insert-source-map :which-key "source code")
 )
 
 (general-define-key
 :keymaps 'ayorg-insert-header-map
-:major-modes t
 :wk-full-keys nil
 "1" '((lambda()(interactive)(insert "* ")) :which-key "H1")
 "2" '((lambda()(interactive)(insert "** ")) :which-key "H2")
@@ -639,7 +647,17 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 "4" '((lambda()(interactive)(insert "**** ")) :which-key "H4")
 "5" '((lambda()(interactive)(insert "***** ")) :which-key "H5")
 )
+
+(general-define-key
+:keymaps 'ayorg-insert-source-map
+:wk-full-keys nil
+"p" '((lambda()(interactive)(insert "#+begin_src python")) :which-key "python")
+"s" '((lambda()(interactive)(insert "#+begin_src sh")) :which-key "shell")
+"l" '((lambda()(interactive)(insert "#+begin_src emacs-lisp")) :which-key "lisp")
+"e" '((lambda()(interactive)(insert "#+end_src")) :which-key "end block")
+)
 #+end_src
+
 
 
 * Launching apps (Broken!)
