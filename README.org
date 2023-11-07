@@ -106,7 +106,6 @@ We need to load /use-package/ and /org-mode/ before anything else as these are c
     (load-theme 'wheatgrass t))
 #+end_src
 
-
 * My Custom Functions
 
 ** Open the capture file
@@ -243,18 +242,19 @@ Self-explanatory. Reloads the configuration file of emacs.
 
 ** Load & Choose Themes
 #+begin_src emacs-lisp
+
 (straight-use-package 'nord-theme)
 (straight-use-package 'gruvbox-theme)
 (straight-use-package 'solarized-theme)
 (straight-use-package 'ayu-theme)
 (straight-use-package 'catppuccin-theme)
 ;(load-theme 'nord t)
-;(load-theme 'solarized-dark t)
+(load-theme 'solarized-dark t)
 ;(load-theme 'solarized-light t)
 ;(load-theme 'ayu-dark t)
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
-(load-theme 'gruvbox-dark-medium  t)
+;(load-theme 'gruvbox-dark-medium  t)
 ;(load-theme 'gruvbox-dark-soft t)
 ;(load-theme 'catppuccin t)
 ;(setq catppuccin-flavor 'frappe)
@@ -361,12 +361,23 @@ Can be "box", "hollow", "bar" or "hbar".
 
 
 * Packages
+** Lua mode
+And also enable its tangling
 
-** Test install of Telegram
+#+begin_src emacs-lisp
+(straight-use-package 'lua-mode)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((lua . t)))
+#+end_src
+
+** Test instll of Telegram
 #+begin_src emacs-lisp
 (straight-use-package 'telega)
 (setq telega-use-images 1)
 #+end_src
+
+
 
 ** Test install of org-mac-link
 Allows to get links from open apps, most useful right now - Safari.
@@ -404,6 +415,21 @@ By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/
 (cua-mode t)
 #+end_src
 
+** Vterm & eShell
+#+begin_src emacs-lisp
+  (straight-use-package 'vterm)
+  (setq vterm-timer-delay 0.01)
+  (add-hook 'vterm-mode-hook (lambda()
+				(visual-line-mode 0)
+				(visual-fill-column-mode 0)
+		              )
+   )
+  (add-hook 'eshell-mode-hook (lambda()
+				(visual-line-mode 0)
+				(visual-fill-column-mode 0)
+		              )
+   )
+#+end_src
 ** Icons for dired
 #+begin_src emacs-lisp
 (straight-use-package 'all-the-icons)
@@ -432,14 +458,6 @@ Both of these read ePub books and aren't particularly well documented.
 (setq nov-variable-pitch nil)
 #+end_src
 
-** Better terminal
-Called vterm, read all about it [[https://github.com/akermu/emacs-libvterm][here]].
-#+begin_src emacs-lisp
-;(add-to-list 'load-path "~/.emacs.d")
-(straight-use-package 'vterm)
-(add-hook 'vterm-mode-hook (lambda() visual-line-mode -1))
-#+end_src
-
 ** Nov keybindings
 These are only for the eReader.
 #+begin_src emacs-lisp
@@ -458,6 +476,20 @@ These are only for the eReader.
 "d" 'nov-next-document
 )
 #+end_src
+
+
+** Disable window decorations for terminal
+#+begin_src emacs-lisp
+  (add-hook 'term-mode-hook (lambda()
+                              (visual-line-mode 0)
+                              (visual-fill-column-mode 0)
+                              (cua-mode 0)
+                              )
+(defadvice term (after advice-term-line-mode activate)
+  (term-line-mode))
+  )
+#+end_src
+
 
 
 * General keybindings
@@ -606,12 +638,19 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 )
 #+end_src
 
-** Apps
+** AppWelcome to the Emacs shell
+
+~/.emacs.d $ s
 #+begin_src emacs-lisp
+
+(defun zsh-term ()
+  (interactive)
+  (term "/bin/zsh"))
+
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(shell :which-key "terminal")
+"t" '(eshell :which-key "terminal")
 "l" '(org-mac-link-get-link :which-key "get open links")
 "b" '(eww :which-key "browser")
 )

@@ -137,12 +137,12 @@
 (straight-use-package 'ayu-theme)
 (straight-use-package 'catppuccin-theme)
 ;(load-theme 'nord t)
-;(load-theme 'solarized-dark t)
+(load-theme 'solarized-dark t)
 ;(load-theme 'solarized-light t)
 ;(load-theme 'ayu-dark t)
 ;(load-theme 'ayu-grey t)
 ;(load-theme 'ayu-light t)
-(load-theme 'gruvbox-dark-medium  t)
+;(load-theme 'gruvbox-dark-medium  t)
 ;(load-theme 'gruvbox-dark-soft t)
 ;(load-theme 'catppuccin t)
 ;(setq catppuccin-flavor 'frappe)
@@ -202,6 +202,8 @@
 
 (electric-indent-mode -1)
 
+(straight-use-package 'lua-mode)
+
 (straight-use-package 'telega)
 (setq telega-use-images 1)
 
@@ -223,6 +225,19 @@
 
 (cua-mode t)
 
+(straight-use-package 'vterm)
+(setq vterm-timer-delay 0.01)
+(add-hook 'vterm-mode-hook (lambda()
+			      (visual-line-mode 0)
+			      (visual-fill-column-mode 0)
+		            )
+ )
+(add-hook 'eshell-mode-hook (lambda()
+			      (visual-line-mode 0)
+			      (visual-fill-column-mode 0)
+		            )
+ )
+
 (straight-use-package 'all-the-icons)
 
 (straight-use-package 'which-key)
@@ -236,10 +251,6 @@
 (straight-use-package 'nov)
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 (setq nov-variable-pitch nil)
-
-;(add-to-list 'load-path "~/.emacs.d")
-(straight-use-package 'vterm)
-(add-hook 'vterm-mode-hook (lambda() visual-line-mode -1))
 
 (general-define-key
 :keymaps 'nov-mode-map
@@ -255,6 +266,15 @@
 "a" 'nov-previous-document
 "d" 'nov-next-document
 )
+
+(add-hook 'term-mode-hook (lambda()
+                              (visual-line-mode 0)
+                              (visual-fill-column-mode 0)
+                              (cua-mode 0)
+                              )
+(defadvice term (after advice-term-line-mode activate)
+  (term-line-mode))
+  )
 
 (general-define-key "s-s" nil "C-x h" nil "C-a" nil "C-e" nil "C-x <right>" nil "C-x C-c" nil "C-g" nil "s-o" nil "M-w" nil "s-q" nil)
 (general-define-key
@@ -358,10 +378,14 @@
 "r" '(generate-config-and-reload :which-key "generate config and reload it")
 )
 
+(defun zsh-term ()
+  (interactive)
+  (term "/bin/zsh"))
+
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(shell :which-key "terminal")
+"t" '(eshell :which-key "terminal")
 "l" '(org-mac-link-get-link :which-key "get open links")
 "b" '(eww :which-key "browser")
 )
