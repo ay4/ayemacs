@@ -203,6 +203,11 @@
 (electric-indent-mode -1)
 
 (straight-use-package 'lua-mode)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((lua . t)))
+
+(straight-use-package 'elpher)
 
 (straight-use-package 'telega)
 (setq telega-use-images 1)

@@ -371,6 +371,12 @@ And also enable its tangling
  '((lua . t)))
 #+end_src
 
+** Elpher - the gopher client
+
+#+begin_src emacs-lisp
+(straight-use-package 'elpher)
+#+end_src
+
 ** Test instll of Telegram
 #+begin_src emacs-lisp
 (straight-use-package 'telega)
@@ -476,6 +482,9 @@ These are only for the eReader.
 "d" 'nov-next-document
 )
 #+end_src
+
+
+
 
 
 ** Disable window decorations for terminal
