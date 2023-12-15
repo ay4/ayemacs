@@ -25,6 +25,5 @@
  '(org-level-1 ((t (:inherit default :foreground "#83a598" :slant italic :height 2.0))))
  '(org-level-2 ((t (:inherit org-level-1 :extend nil :foreground "#fabd2f" :height 180))))
  '(org-level-3 ((t (:inherit org-level-1 :foreground "#d3869b" :height 150))))
- '(org-level-4 ((t (:inherit default :foreground "#b58900" :box (:line-width (5 . 5) :style flat-button) :height 1.1))))
  '(org-meta-line ((t (:inherit org-level-3 :slant normal))))
  '(window-divider ((t (:foreground "gray16")))))
