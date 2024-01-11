@@ -96,8 +96,8 @@ We need to load /use-package/ and /org-mode/ before anything else as these are c
 
 ** Open Emacs Maximized
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-(setq ns-pop-up-frames nil)
+;(add-to-list 'default-frame-alist '(fullscreen . maximized))
+;(setq ns-pop-up-frames nil)
 #+end_src
 
 ** Load Default Theme
@@ -243,25 +243,31 @@ Self-explanatory. Reloads the configuration file of emacs.
 ** Load & Choose Themes
 #+begin_src emacs-lisp
 
-(straight-use-package 'nord-theme)
-(straight-use-package 'gruvbox-theme)
-(straight-use-package 'solarized-theme)
-(straight-use-package 'ayu-theme)
-(straight-use-package 'catppuccin-theme)
-;(load-theme 'nord t)
-(load-theme 'solarized-dark t)
-;(load-theme 'solarized-light t)
-;(load-theme 'ayu-dark t)
-;(load-theme 'ayu-grey t)
-;(load-theme 'ayu-light t)
-;(load-theme 'gruvbox-dark-medium  t)
-;(load-theme 'gruvbox-dark-soft t)
-;(load-theme 'catppuccin t)
-;(setq catppuccin-flavor 'frappe)
-;(load-theme 'gruvbox-dark-hard t)
-;(load-theme 'gruvbox-light-medium t)
-;(load-theme 'gruvbox-light-soft t)
-;(load-theme 'gruvbox-light-hard t)
+  (straight-use-package 'nord-theme)
+  (straight-use-package
+    '(nano :type git :host github :repo "oracleyue/elegant-theme"))
+  (straight-use-package
+    '(lambda-themes :type git :host github :repo "Lambda-Emacs/lambda-themes"))
+  ;; (straight-use-package 'gruvbox-theme)
+  ;; (straight-use-package 'solarized-theme)
+  ;; (straight-use-package 'ayu-theme)
+  ;; (straight-use-package 'catppuccin-theme)
+  ;(load-theme 'nord t)
+  (load-theme 'lambda-light t)
+  ;(load-theme 'elegant-light t)
+  ; (load-theme 'solarized-dark t)
+  ;(load-theme 'solarized-light t)
+  ;(load-theme 'ayu-dark t)
+  ;(load-theme 'ayu-grey t)
+  ;(load-theme 'ayu-light t)
+  ;(load-theme 'gruvbox-dark-medium  t)
+  ;(load-theme 'gruvbox-dark-soft t)
+  ;(load-theme 'catppuccin t)
+  ;(setq catppuccin-flavor 'frappe)
+  ;(load-theme 'gruvbox-dark-hard t)
+  ;(load-theme 'gruvbox-light-medium t)
+  ;(load-theme 'gruvbox-light-soft t)
+  ;(load-theme 'gruvbox-light-hard t)
 #+end_src
 
 ** Set Up Margins
@@ -292,15 +298,15 @@ We're using the [[https://github.com/joostkremers/visual-fill-column][visual-fil
 (global-visual-line-mode 1)
 #+end_src
 
-** Dim Inactive Windows
+** Dim Inactive Windows (Turned off)
 We use an amazing package called [[https://github.com/gonewest818/dimmer.el][dimmer.el]]. Examples of its work can also be found [[https://gonewest818.github.io/2020/03/dimmer-gallery/][here]].
 #+begin_src emacs-lisp
-(straight-use-package 'dimmer)
-'(dimmer-adjustment-mode :both)
-'(dimmer-fraction 1.0)
-(add-hook 'after-init-hook (lambda ()
-     (when (fboundp 'dimmer-mode)
-       (dimmer-mode t))))
+  ;; (straight-use-package 'dimmer)
+  ;; '(dimmer-adjustment-mode :both)
+  ;; '(dimmer-fraction 1.0)
+  ;; (add-hook 'after-init-hook (lambda ()
+  ;;      (when (fboundp 'dimmer-mode)
+  ;;        (dimmer-mode t))))
 #+end_src
 
 ** Set Up Window Decorations (Broken)
@@ -377,18 +383,18 @@ And also enable its tangling
 (straight-use-package 'elpher)
 #+end_src
 
-** Test instll of Telegram
+** Test instll of Telegram (Off)
 #+begin_src emacs-lisp
-(straight-use-package 'telega)
-(setq telega-use-images 1)
+  ;; (straight-use-package 'telega)
+  ;; (setq telega-use-images 1)
 #+end_src
 
 
 
-** Test install of org-mac-link
+** Test install of org-mac-link (Off)
 Allows to get links from open apps, most useful right now - Safari.
 #+begin_src emacs-lisp
-(straight-use-package 'org-mac-link)
+  ;; (straight-use-package 'org-mac-link)
 #+end_src
 
 ** Better keybindings
@@ -421,24 +427,24 @@ By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/
 (cua-mode t)
 #+end_src
 
-** Vterm & eShell
+** Vterm & eShell (Turned off)
 #+begin_src emacs-lisp
-  (straight-use-package 'vterm)
-  (setq vterm-timer-delay 0.01)
-  (add-hook 'vterm-mode-hook (lambda()
-				(visual-line-mode 0)
-				(visual-fill-column-mode 0)
-		              )
-   )
-  (add-hook 'eshell-mode-hook (lambda()
-				(visual-line-mode 0)
-				(visual-fill-column-mode 0)
-		              )
-   )
+  ;; (straight-use-package 'vterm)
+  ;; (setq vterm-timer-delay 0.01)
+  ;; (add-hook 'vterm-mode-hook (lambda()
+  ;; 			      (visual-line-mode 0)
+  ;; 			      (visual-fill-column-mode 0)
+  ;; 		            )
+  ;;  )
+  ;; (add-hook 'eshell-mode-hook (lambda()
+  ;; 			      (visual-line-mode 0)
+  ;; 			      (visual-fill-column-mode 0)
+  ;;                            )
+  ;; )
 #+end_src
-** Icons for dired
+** Icons for dired (off)
 #+begin_src emacs-lisp
-(straight-use-package 'all-the-icons)
+  ;; (straight-use-package 'all-the-icons)
 #+end_src
 
 ** Which-key
@@ -456,31 +462,31 @@ See documentation [[https://github.com/justbur/emacs-which-key][here]].
   (setq avy-background t)
 #+end_src
 
-** Ereader
+** Ereader (Off)
 Both of these read ePub books and aren't particularly well documented.
 #+begin_src emacs-lisp
-(straight-use-package 'nov)
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-(setq nov-variable-pitch nil)
+  ;; (straight-use-package 'nov)
+  ;; (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  ;; (setq nov-variable-pitch nil)
 #+end_src
 
 ** Nov keybindings
 These are only for the eReader.
 #+begin_src emacs-lisp
-(general-define-key
-:keymaps 'nov-mode-map
-"SPC" nil "S-SPC" nil "q" nil "w" nil "s" nil "a" nil "d" nil "[" nil "]" nil "t" nil "l" nil "r" nil "<left>" nil "<right>" nil "<up>" nil "<down>" nil
-)
-(general-define-key
-:keymaps 'nov-mode-map
-"SPC" 'nov-scroll-up
-"s" 'nov-scroll-up
-"S-SPC" 'nov-scroll-down
-"w" 'nov-scroll-down
-"<home>" 'nov-goto-toc
-"a" 'nov-previous-document
-"d" 'nov-next-document
-)
+  ;; (general-define-key
+  ;; :keymaps 'nov-mode-map
+  ;; "SPC" nil "S-SPC" nil "q" nil "w" nil "s" nil "a" nil "d" nil "[" nil "]" nil "t" nil "l" nil "r" nil "<left>" nil "<right>" nil "<up>" nil "<down>" nil
+  ;; )
+  ;; (general-define-key
+  ;; :keymaps 'nov-mode-map
+  ;; "SPC" 'nov-scroll-up
+  ;; "s" 'nov-scroll-up
+  ;; "S-SPC" 'nov-scroll-down
+  ;; "w" 'nov-scroll-down
+  ;; "<home>" 'nov-goto-toc
+  ;; "a" 'nov-previous-document
+  ;; "d" 'nov-next-document
+  ;; )
 #+end_src
 
 
@@ -582,6 +588,12 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 )
 #+end_src
 
+* Special treatment for coding
+#+begin_src emacs-lisp
+(straight-use-package 'python-mode)
+(require 'python-mode)
+(add-hook 'python-mode-hook (lambda () (visual-line-mode 0) (visual-fill-column-mode 0) (display-line-numbers-mode 1)))
+#+end_src
 
 * Aymenu
 
@@ -597,7 +609,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
   "s" '(:prefix-command aysystem-map :which-key "system")
   "v" '(:prefix-command aytoo-map :which-key "view")
   "s-o" '(open-inbox :which-key "open inbox")
-  "t" '(:keymap telega-prefix-map :which-key "telegram")
+;;  "t" '(:keymap telega-prefix-map :which-key "telegram")
 )
 
 #+end_src
@@ -647,7 +659,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 )
 #+end_src
 
-** AppWelcome to the Emacs shell
+** App
 
 ~/.emacs.d $ s
 #+begin_src emacs-lisp
@@ -877,3 +889,9 @@ For now, all the org visuals are there. Ideally, of course, we would like to get
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
+
+* Editing settings
+;; Local Variables:
+;; eval: (visual-line-mode 0)
+;; eval: (visual-fill-column-mode 0)
+;; End:

@@ -41,8 +41,8 @@
 
 (setq create-lockfiles nil)
 
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-(setq ns-pop-up-frames nil)
+;(add-to-list 'default-frame-alist '(fullscreen . maximized))
+;(setq ns-pop-up-frames nil)
 
 (if (not custom-enabled-themes)
     (load-theme 'wheatgrass t))
@@ -132,12 +132,18 @@
 (setq shr-use-fonts nil)
 
 (straight-use-package 'nord-theme)
-(straight-use-package 'gruvbox-theme)
-(straight-use-package 'solarized-theme)
-(straight-use-package 'ayu-theme)
-(straight-use-package 'catppuccin-theme)
+(straight-use-package
+  '(nano :type git :host github :repo "oracleyue/elegant-theme"))
+(straight-use-package
+  '(lambda-themes :type git :host github :repo "Lambda-Emacs/lambda-themes"))
+;; (straight-use-package 'gruvbox-theme)
+;; (straight-use-package 'solarized-theme)
+;; (straight-use-package 'ayu-theme)
+;; (straight-use-package 'catppuccin-theme)
 ;(load-theme 'nord t)
-(load-theme 'solarized-dark t)
+(load-theme 'lambda-light t)
+;(load-theme 'elegant-light t)
+; (load-theme 'solarized-dark t)
 ;(load-theme 'solarized-light t)
 ;(load-theme 'ayu-dark t)
 ;(load-theme 'ayu-grey t)
@@ -168,12 +174,12 @@
 (add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 (global-visual-line-mode 1)
 
-(straight-use-package 'dimmer)
-'(dimmer-adjustment-mode :both)
-'(dimmer-fraction 1.0)
-(add-hook 'after-init-hook (lambda ()
-     (when (fboundp 'dimmer-mode)
-       (dimmer-mode t))))
+;; (straight-use-package 'dimmer)
+;; '(dimmer-adjustment-mode :both)
+;; '(dimmer-fraction 1.0)
+;; (add-hook 'after-init-hook (lambda ()
+;;      (when (fboundp 'dimmer-mode)
+;;        (dimmer-mode t))))
 
 '(window-divider-default-bottom-width 1)
 '(window-divider-default-places t)
@@ -209,10 +215,10 @@
 
 (straight-use-package 'elpher)
 
-(straight-use-package 'telega)
-(setq telega-use-images 1)
+;; (straight-use-package 'telega)
+;; (setq telega-use-images 1)
 
-(straight-use-package 'org-mac-link)
+;; (straight-use-package 'org-mac-link)
 
 (straight-use-package 'general)
 
@@ -230,20 +236,20 @@
 
 (cua-mode t)
 
-(straight-use-package 'vterm)
-(setq vterm-timer-delay 0.01)
-(add-hook 'vterm-mode-hook (lambda()
-			      (visual-line-mode 0)
-			      (visual-fill-column-mode 0)
-		            )
- )
-(add-hook 'eshell-mode-hook (lambda()
-			      (visual-line-mode 0)
-			      (visual-fill-column-mode 0)
-		            )
- )
+;; (straight-use-package 'vterm)
+;; (setq vterm-timer-delay 0.01)
+;; (add-hook 'vterm-mode-hook (lambda()
+;; 			      (visual-line-mode 0)
+;; 			      (visual-fill-column-mode 0)
+;; 		            )
+;;  )
+;; (add-hook 'eshell-mode-hook (lambda()
+;; 			      (visual-line-mode 0)
+;; 			      (visual-fill-column-mode 0)
+;;                            )
+;; )
 
-(straight-use-package 'all-the-icons)
+;; (straight-use-package 'all-the-icons)
 
 (straight-use-package 'which-key)
 (setq which-key-idle-delay 0)
@@ -253,24 +259,24 @@
 (setq avy-keys '(?i ?e ?a ?h))
 (setq avy-background t)
 
-(straight-use-package 'nov)
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-(setq nov-variable-pitch nil)
+;; (straight-use-package 'nov)
+;; (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+;; (setq nov-variable-pitch nil)
 
-(general-define-key
-:keymaps 'nov-mode-map
-"SPC" nil "S-SPC" nil "q" nil "w" nil "s" nil "a" nil "d" nil "[" nil "]" nil "t" nil "l" nil "r" nil "<left>" nil "<right>" nil "<up>" nil "<down>" nil
-)
-(general-define-key
-:keymaps 'nov-mode-map
-"SPC" 'nov-scroll-up
-"s" 'nov-scroll-up
-"S-SPC" 'nov-scroll-down
-"w" 'nov-scroll-down
-"<home>" 'nov-goto-toc
-"a" 'nov-previous-document
-"d" 'nov-next-document
-)
+;; (general-define-key
+;; :keymaps 'nov-mode-map
+;; "SPC" nil "S-SPC" nil "q" nil "w" nil "s" nil "a" nil "d" nil "[" nil "]" nil "t" nil "l" nil "r" nil "<left>" nil "<right>" nil "<up>" nil "<down>" nil
+;; )
+;; (general-define-key
+;; :keymaps 'nov-mode-map
+;; "SPC" 'nov-scroll-up
+;; "s" 'nov-scroll-up
+;; "S-SPC" 'nov-scroll-down
+;; "w" 'nov-scroll-down
+;; "<home>" 'nov-goto-toc
+;; "a" 'nov-previous-document
+;; "d" 'nov-next-document
+;; )
 
 (add-hook 'term-mode-hook (lambda()
                               (visual-line-mode 0)
@@ -337,6 +343,10 @@
 "<escape>" 'abort-recursive-edit
 )
 
+(straight-use-package 'python-mode)
+(require 'python-mode)
+(add-hook 'python-mode-hook (lambda () (visual-line-mode 0) (visual-fill-column-mode 0) (display-line-numbers-mode 1)))
+
 (defconst ayleader "s-o")
   (general-define-key
   :prefix ayleader
@@ -347,7 +357,7 @@
   "s" '(:prefix-command aysystem-map :which-key "system")
   "v" '(:prefix-command aytoo-map :which-key "view")
   "s-o" '(open-inbox :which-key "open inbox")
-  "t" '(:keymap telega-prefix-map :which-key "telegram")
+;;  "t" '(:keymap telega-prefix-map :which-key "telegram")
 )
 
 (general-define-key
