@@ -2,27 +2,7 @@
 #+property: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 #+STARTUP: overview
 
-* Emacs daemon
-For everything to work properly, I start emacs-daemon as emacs --daemon=ayserver and change my emacs.app to the following:
-#+begin_src sh
-# Run the command and check its exit code
-/usr/local/bin/emacsclient -s ayservername -e '(+ 1 0)' >/dev/null 2>&1
 
-exit_code=$?
-
-# Check the exit code and launch the appropriate commands
-if [ $exit_code -eq 0 ]; then
-/usr/local/bin/emacsclient -s ayservername -n -e "(> (length (frame-list)) 1)" | grep -q t
-if [ "$?" = "1" ]; then
-    /usr/local/bin/emacsclient -s ayservername -e '(x-focus-frame nil)' -c -n -a "" "$@" >/dev/null 2>&1 &
-else
-    /usr/local/bin/emacsclient -s ayservername -n -a "" "$@" >/dev/null 2>&1 &
-fi
-else
-    # Launch emacs daemon and wait for it to start
-    /usr/local/bin/emacs --daemon=ayservername ; /usr/local/bin/emacsclient -s ayservername -c "$@" >/dev/null 2>&1 &
-fi
-#+end_src
 
 * Package manager
 All packages in my configuration are handled via [[https://github.com/radian-software/straight.el][straight.el]]. This is a very handy package manager.
@@ -94,7 +74,7 @@ We need to load /use-package/ and /org-mode/ before anything else as these are c
 (setq create-lockfiles nil)
 #+end_src
 
-** Open Emacs Maximized
+** Open Emacs Maximized (Off)
 #+begin_src emacs-lisp
 ;(add-to-list 'default-frame-alist '(fullscreen . maximized))
 ;(setq ns-pop-up-frames nil)
@@ -143,6 +123,7 @@ Self-explanatory. Reloads the configuration file of emacs.
 - Offer the current filename for editing by default, as personally I often want a variation on that, and it's slightly annoying not having it there to begin with.
 - Don't overwrite an existing file without asking the user, and never overwrite the current buffer's file.
 - If the region is active, write the region; otherwise write the entire (widened) buffer.
+
 #+begin_src emacs-lisp
 (defun my-write-copy-to-file ()
   "Write a copy of the current buffer or region to a file."
@@ -221,12 +202,12 @@ Self-explanatory. Reloads the configuration file of emacs.
 
 ** Disable menu-bar, tool-bar, and scroll-bar.
 #+begin_src emacs-lisp
-(if (fboundp 'menu-bar-mode)
-    (menu-bar-mode -1))
-(if (fboundp 'tool-bar-mode)
-    (tool-bar-mode -1))
-(if (fboundp 'scroll-bar-mode)
-    (scroll-bar-mode -1))
+  (if (fboundp 'menu-bar-mode)
+      (menu-bar-mode -1))
+    (if (fboundp 'tool-bar-mode)
+        (tool-bar-mode -1))
+    (if (fboundp 'scroll-bar-mode)
+        (scroll-bar-mode -1))
 #+end_src
 
 ** Set Up Font
@@ -298,26 +279,6 @@ We're using the [[https://github.com/joostkremers/visual-fill-column][visual-fil
 (global-visual-line-mode 1)
 #+end_src
 
-** Dim Inactive Windows (Turned off)
-We use an amazing package called [[https://github.com/gonewest818/dimmer.el][dimmer.el]]. Examples of its work can also be found [[https://gonewest818.github.io/2020/03/dimmer-gallery/][here]].
-#+begin_src emacs-lisp
-  ;; (straight-use-package 'dimmer)
-  ;; '(dimmer-adjustment-mode :both)
-  ;; '(dimmer-fraction 1.0)
-  ;; (add-hook 'after-init-hook (lambda ()
-  ;;      (when (fboundp 'dimmer-mode)
-  ;;        (dimmer-mode t))))
-#+end_src
-
-** Set Up Window Decorations (Broken)
-This is supposed to regulate borders between windows, but for some reason they're invisible now. Likely their colour is set up bad.
-#+begin_src emacs-lisp
-'(window-divider-default-bottom-width 1)
-'(window-divider-default-places t)
-'(window-divider-default-right-width 1)
-'(window-divider-mode t)
-#+end_src
-
 ** Misc
 *** Disable line numbers
 #+begin_src emacs-lisp
@@ -377,24 +338,22 @@ And also enable its tangling
  '((lua . t)))
 #+end_src
 
-** Elpher - the gopher client
+** Elpher - the gopher client (off)
 
 #+begin_src emacs-lisp
-(straight-use-package 'elpher)
+; (straight-use-package 'elpher)
 #+end_src
 
 ** Test instll of Telegram (Off)
 #+begin_src emacs-lisp
-  ;; (straight-use-package 'telega)
-  ;; (setq telega-use-images 1)
+  ; (straight-use-package 'telega)
+  ; (setq telega-use-images 1)
 #+end_src
-
-
 
 ** Test install of org-mac-link (Off)
 Allows to get links from open apps, most useful right now - Safari.
 #+begin_src emacs-lisp
-  ;; (straight-use-package 'org-mac-link)
+  ; (straight-use-package 'org-mac-link)
 #+end_src
 
 ** Better keybindings
@@ -427,26 +386,6 @@ By [[https://github.com/minad/vertico][vertico]] and [[https://github.com/minad/
 (cua-mode t)
 #+end_src
 
-** Vterm & eShell (Turned off)
-#+begin_src emacs-lisp
-  ;; (straight-use-package 'vterm)
-  ;; (setq vterm-timer-delay 0.01)
-  ;; (add-hook 'vterm-mode-hook (lambda()
-  ;; 			      (visual-line-mode 0)
-  ;; 			      (visual-fill-column-mode 0)
-  ;; 		            )
-  ;;  )
-  ;; (add-hook 'eshell-mode-hook (lambda()
-  ;; 			      (visual-line-mode 0)
-  ;; 			      (visual-fill-column-mode 0)
-  ;;                            )
-  ;; )
-#+end_src
-** Icons for dired (off)
-#+begin_src emacs-lisp
-  ;; (straight-use-package 'all-the-icons)
-#+end_src
-
 ** Which-key
 See documentation [[https://github.com/justbur/emacs-which-key][here]].
 #+begin_src emacs-lisp
@@ -455,11 +394,11 @@ See documentation [[https://github.com/justbur/emacs-which-key][here]].
 (which-key-mode)
 #+end_src
 
-** Avy jumpng
+** Avy jumpng (off)
 #+begin_src emacs-lisp
-  (straight-use-package 'avy)
-  (setq avy-keys '(?i ?e ?a ?h))
-  (setq avy-background t)
+  ;; (straight-use-package 'avy)
+  ;; (setq avy-keys '(?i ?e ?a ?h))
+  ;; (setq avy-background t)
 #+end_src
 
 ** Ereader (Off)
@@ -470,7 +409,7 @@ Both of these read ePub books and aren't particularly well documented.
   ;; (setq nov-variable-pitch nil)
 #+end_src
 
-** Nov keybindings
+** Nov keybindings (Off)
 These are only for the eReader.
 #+begin_src emacs-lisp
   ;; (general-define-key
@@ -490,9 +429,6 @@ These are only for the eReader.
 #+end_src
 
 
-
-
-
 ** Disable window decorations for terminal
 #+begin_src emacs-lisp
   (add-hook 'term-mode-hook (lambda()
@@ -504,8 +440,6 @@ These are only for the eReader.
   (term-line-mode))
   )
 #+end_src
-
-
 
 * General keybindings
 
@@ -591,7 +525,6 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 * Special treatment for coding
 #+begin_src emacs-lisp
 (straight-use-package 'python-mode)
-(require 'python-mode)
 (add-hook 'python-mode-hook (lambda () (visual-line-mode 0) (visual-fill-column-mode 0) (display-line-numbers-mode 1)))
 #+end_src
 
@@ -660,19 +593,19 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 #+end_src
 
 ** App
-
-~/.emacs.d $ s
 #+begin_src emacs-lisp
 
-(defun zsh-term ()
+;; This is helpful if you're using term.el
+;; which has the annoying habit of asking
+;; you which shell to launch.
+(defun fish-term ()
   (interactive)
-  (term "/bin/zsh"))
+  (term "/opt/homebrew/bin/fish"))
 
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(eshell :which-key "terminal")
-"l" '(org-mac-link-get-link :which-key "get open links")
+"t" '(fish-term :which-key "terminal")
 "b" '(eww :which-key "browser")
 )
 #+end_src
@@ -719,40 +652,7 @@ Making cmd+f search work more like in other editors. I know, blasphemy.
 #+end_src
 
 
-
-* Launching apps (Broken!)
-This is temporarily broken, at least on mac. This was intended for Linux and is conflicting with ⌥+space keybinding the mac uses. Maybe it should stay this way.
-
-** Run "Alfred"
-#+begin_src emacs-lisp
-(defun applauncher ()
-  "Run external apps"
-(interactive)
-(require 'subr-x)
-(start-process "Temp" "Temp" (string-trim-right (read-shell-command "→  "))))
-#+end_src
-
-** Launch Nyxt browser
-(Wasn't tested on Mac)
-#+begin_src emacs-lisp
-(defun launch-browser ()
-"Run Nyxt"
-(interactive)
-(start-process "Temp" "Temp" "nyxt"))
-#+end_src
-
-** Hotkeys
-#+begin_src emacs-lisp
-(define-key global-map (kbd "M-SPC") nil)
-(define-key global-map (kbd "M-SPC") '("Run commands" . applauncher))
-#+end_src
-
-
 * Org-mode
-
-** TODOS
-**** TODO Make a ayMenu thing to insert everything
-**** TODO Make a nice table of contents
 
 ** Faces & Line-spacing
 #+begin_src emacs-lisp
@@ -895,3 +795,51 @@ For now, all the org visuals are there. Ideally, of course, we would like to get
 ;; eval: (visual-line-mode 0)
 ;; eval: (visual-fill-column-mode 0)
 ;; End:
+
+* Turned off or broken
+** Emacs daemon (now turned off)
+For everything to work properly, I start emacs-daemon as emacs --daemon=ayserver and change my emacs.app to the following:
+#+begin_src sh
+# Run the command and check its exit code
+/usr/local/bin/emacsclient -s ayservername -e '(+ 1 0)' >/dev/null 2>&1
+
+exit_code=$?
+
+# Check the exit code and launch the appropriate commands
+if [ $exit_code -eq 0 ]; then
+/usr/local/bin/emacsclient -s ayservername -n -e "(> (length (frame-list)) 1)" | grep -q t
+if [ "$?" = "1" ]; then
+    /usr/local/bin/emacsclient -s ayservername -e '(x-focus-frame nil)' -c -n -a "" "$@" >/dev/null 2>&1 &
+else
+    /usr/local/bin/emacsclient -s ayservername -n -a "" "$@" >/dev/null 2>&1 &
+fi
+else
+    # Launch emacs daemon and wait for it to start
+    /usr/local/bin/emacs --daemon=ayservername ; /usr/local/bin/emacsclient -s ayservername -c "$@" >/dev/null 2>&1 &
+#+end_src
+** Launching apps (Broken!)
+This is temporarily broken, at least on mac. This was intended for Linux and is conflicting with ⌥+space keybinding the mac uses. Maybe it should stay this way.
+
+** Run "Alfred"
+#+begin_src emacs-lisp
+(defun applauncher ()
+  "Run external apps"
+(interactive)
+(require 'subr-x)
+(start-process "Temp" "Temp" (string-trim-right (read-shell-command "→  "))))
+#+end_src
+
+** Launch Nyxt browser
+(Wasn't tested on Mac)
+#+begin_src emacs-lisp
+(defun launch-browser ()
+"Run Nyxt"
+(interactive)
+(start-process "Temp" "Temp" "nyxt"))
+#+end_src
+
+** Hotkeys
+#+begin_src emacs-lisp
+(define-key global-map (kbd "M-SPC") nil)
+(define-key global-map (kbd "M-SPC") '("Run commands" . applauncher))
+#+end_src

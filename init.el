@@ -121,10 +121,10 @@
 
 (if (fboundp 'menu-bar-mode)
     (menu-bar-mode -1))
-(if (fboundp 'tool-bar-mode)
-    (tool-bar-mode -1))
-(if (fboundp 'scroll-bar-mode)
-    (scroll-bar-mode -1))
+  (if (fboundp 'tool-bar-mode)
+      (tool-bar-mode -1))
+  (if (fboundp 'scroll-bar-mode)
+      (scroll-bar-mode -1))
 
 (set-face-attribute 'default nil :font "Victor Mono")
 (set-face-attribute 'default nil :height 140)
@@ -174,18 +174,6 @@
 (add-hook 'visual-line-mode-hook #'visual-fill-column-mode)
 (global-visual-line-mode 1)
 
-;; (straight-use-package 'dimmer)
-;; '(dimmer-adjustment-mode :both)
-;; '(dimmer-fraction 1.0)
-;; (add-hook 'after-init-hook (lambda ()
-;;      (when (fboundp 'dimmer-mode)
-;;        (dimmer-mode t))))
-
-'(window-divider-default-bottom-width 1)
-'(window-divider-default-places t)
-'(window-divider-default-right-width 1)
-'(window-divider-mode t)
-
 (global-display-line-numbers-mode 0)
 
 (setq-default mode-line-format nil)
@@ -213,12 +201,12 @@
  'org-babel-load-languages
  '((lua . t)))
 
-(straight-use-package 'elpher)
+; (straight-use-package 'elpher)
 
-;; (straight-use-package 'telega)
-;; (setq telega-use-images 1)
+; (straight-use-package 'telega)
+; (setq telega-use-images 1)
 
-;; (straight-use-package 'org-mac-link)
+; (straight-use-package 'org-mac-link)
 
 (straight-use-package 'general)
 
@@ -236,28 +224,13 @@
 
 (cua-mode t)
 
-;; (straight-use-package 'vterm)
-;; (setq vterm-timer-delay 0.01)
-;; (add-hook 'vterm-mode-hook (lambda()
-;; 			      (visual-line-mode 0)
-;; 			      (visual-fill-column-mode 0)
-;; 		            )
-;;  )
-;; (add-hook 'eshell-mode-hook (lambda()
-;; 			      (visual-line-mode 0)
-;; 			      (visual-fill-column-mode 0)
-;;                            )
-;; )
-
-;; (straight-use-package 'all-the-icons)
-
 (straight-use-package 'which-key)
 (setq which-key-idle-delay 0)
 (which-key-mode)
 
-(straight-use-package 'avy)
-(setq avy-keys '(?i ?e ?a ?h))
-(setq avy-background t)
+;; (straight-use-package 'avy)
+;; (setq avy-keys '(?i ?e ?a ?h))
+;; (setq avy-background t)
 
 ;; (straight-use-package 'nov)
 ;; (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
@@ -344,7 +317,6 @@
 )
 
 (straight-use-package 'python-mode)
-(require 'python-mode)
 (add-hook 'python-mode-hook (lambda () (visual-line-mode 0) (visual-fill-column-mode 0) (display-line-numbers-mode 1)))
 
 (defconst ayleader "s-o")
@@ -393,15 +365,17 @@
 "r" '(generate-config-and-reload :which-key "generate config and reload it")
 )
 
-(defun zsh-term ()
+;; This is helpful if you're using term.el
+;; which has the annoying habit of asking
+;; you which shell to launch.
+(defun fish-term ()
   (interactive)
-  (term "/bin/zsh"))
+  (term "/opt/homebrew/bin/fish"))
 
 (general-define-key
 :keymaps 'ayapp-map
 :wk-full-keys nil
-"t" '(eshell :which-key "terminal")
-"l" '(org-mac-link-get-link :which-key "get open links")
+"t" '(fish-term :which-key "terminal")
 "b" '(eww :which-key "browser")
 )
 
@@ -441,20 +415,6 @@
 "l" '((lambda()(interactive)(insert "#+begin_src emacs-lisp")) :which-key "lisp")
 "e" '((lambda()(interactive)(insert "#+end_src")) :which-key "end block")
 )
-
-(defun applauncher ()
-  "Run external apps"
-(interactive)
-(require 'subr-x)
-(start-process "Temp" "Temp" (string-trim-right (read-shell-command "→  "))))
-
-(defun launch-browser ()
-"Run Nyxt"
-(interactive)
-(start-process "Temp" "Temp" "nyxt"))
-
-(define-key global-map (kbd "M-SPC") nil)
-(define-key global-map (kbd "M-SPC") '("Run commands" . applauncher))
 
 (setq-default line-spacing 4)
 
@@ -528,3 +488,17 @@
 (setq custom-file (locate-user-emacs-file "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
+
+(defun applauncher ()
+  "Run external apps"
+(interactive)
+(require 'subr-x)
+(start-process "Temp" "Temp" (string-trim-right (read-shell-command "→  "))))
+
+(defun launch-browser ()
+"Run Nyxt"
+(interactive)
+(start-process "Temp" "Temp" "nyxt"))
+
+(define-key global-map (kbd "M-SPC") nil)
+(define-key global-map (kbd "M-SPC") '("Run commands" . applauncher))
