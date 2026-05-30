@@ -181,7 +181,7 @@
 ;; (Gemini has no "forward" — a/[ both go back.)
 
 (use-package elpher
-  :straight t
+  :straight (:host github :repo "emacsmirror/elpher")
   :commands elpher
   :config
   (setq elpher-default-url-type "gemini")

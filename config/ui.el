@@ -18,8 +18,8 @@
 (setq initial-scratch-message "")
 (setq initial-major-mode 'text-mode) ; scratch buffer starts in plain text mode
 (menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+(when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
+(when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 (setq-default frame-title-format '("%b"))
 (setq ring-bell-function 'ignore)
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -27,7 +27,7 @@
 (transient-mark-mode 1)
 (global-auto-revert-mode t)
 (setq-default cursor-type 'box)
-(fringe-mode 0)
+(when (fboundp 'fringe-mode) (fringe-mode 0))
 
 
 ;; ──────────────────────────────────────────
