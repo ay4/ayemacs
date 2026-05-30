@@ -148,5 +148,20 @@
     (load theme-file nil t)))
 
 ;; early-init.el hides the frame to prevent white flash during startup.
-;; Make it visible now that the theme has loaded.
+;; Position the frame (matching Hammerspoon HYPER+v: 12×8 grid, x=4 y=1 w=4 h=6)
+;; then reveal it — depth -10 ensures positioning runs before visibility at depth 0.
+(defun ay-set-initial-frame-geometry ()
+  (let* ((wa   (frame-monitor-workarea))
+         (wa-x (nth 0 wa)) (wa-y (nth 1 wa))
+         (wa-w (nth 2 wa)) (wa-h (nth 3 wa))
+         (f-x  (+ wa-x (round (* (/ 4.0 12) wa-w))))
+         (f-y  (+ wa-y (round (* (/ 1.0  8) wa-h))))
+         (f-w  (round (* (/ 4.0 12) wa-w)))
+         (f-h  (round (* (/ 6.0  8) wa-h))))
+    (set-frame-parameter nil 'left   f-x)
+    (set-frame-parameter nil 'top    f-y)
+    (set-frame-parameter nil 'width  (cons 'text-pixels f-w))
+    (set-frame-parameter nil 'height (cons 'text-pixels f-h))))
+
+(add-hook 'after-init-hook #'ay-set-initial-frame-geometry -10)
 (add-hook 'after-init-hook #'make-frame-visible)
