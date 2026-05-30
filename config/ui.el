@@ -50,7 +50,7 @@
   "Internal border width in pixels — visual breathing room around the frame.")
 
 (defun ay-setup-frame-border (&rest _)
-  "Set internal frame border width and match its color to the theme background."
+  "Set internal frame border width, color, and ns-appearance to match the theme."
   (when (display-graphic-p)
     ;; Small delay lets the theme fully settle before reading background color.
     (run-at-time 0.1 nil
@@ -58,7 +58,15 @@
         (when (display-graphic-p)
           (let ((bg (face-attribute 'default :background nil t)))
             (when (and bg (not (eq bg 'unspecified)))
-              (set-face-background 'internal-border bg)))
+              (set-face-background 'internal-border bg)
+              ;; Keep title-bar buttons dark/light in sync with the theme.
+              (when (eq system-type 'darwin)
+                (let* ((c (color-values bg))
+                       (appearance (if (< (+ (nth 0 c) (nth 1 c) (nth 2 c))
+                                          (* 3 32767))
+                                       'dark 'light)))
+                  (dolist (frame (frame-list))
+                    (set-frame-parameter frame 'ns-appearance appearance))))))
           (dolist (frame (frame-list))
             (set-frame-parameter frame 'internal-border-width ay-frame-border-width)))))))
 
