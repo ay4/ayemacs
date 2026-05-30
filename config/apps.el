@@ -181,7 +181,7 @@
 ;; (Gemini has no "forward" — a/[ both go back.)
 
 (use-package elpher
-  :straight nil   ; installed via apt (elpa-elpher)
+  :straight t
   :commands elpher
   :config
   (setq elpher-default-url-type "gemini")
