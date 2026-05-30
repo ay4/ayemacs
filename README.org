@@ -1,0 +1,128 @@
+* ayemacs
+
+Personal Emacs configuration. Uses [[https://github.com/radian-software/straight.el][straight.el]] for reproducible package
+management and [[https://github.com/magit/transient][transient]] for a keyboard-driven menu system.
+
+Works on macOS and Linux.
+
+** Structure
+
+#+begin_example
+init.el          — bootstrap: straight.el, performance tweaks, loads config.el
+early-init.el    — hide frame on startup (prevents white flash)
+config.el        — loads config/ files in order
+config/
+  keybindings.el — modifier remapping, CUA, global keys
+  ui.el          — appearance, themes, frame setup
+  editing.el     — completion, undo, org, markdown, typewriter mode
+  windows.el     — pane splitting, dimmer
+  apps.el        — terminal, browsers, IRC, bookmarks
+  menus.el       — all transient menus
+theme.el         — persisted theme choice (written by ay-pick-theme)
+#+end_example
+
+** Key Bindings
+
+The modifier keys are remapped on macOS to match a ThinkPad/keyd layout:
+
+| Physical key | macOS sends | Emacs sees |
+|--------------+-------------+------------|
+| Cmd          | Ctrl        | =C-=       |
+| Option       | Alt/Meta    | =M-=       |
+| Ctrl         | Super       | =s-=       |
+
+This means all bindings use =C-= on both platforms.
+
+*** Global
+
+| Key        | Action                          |
+|------------+---------------------------------|
+| =C-k=      | Main menu                       |
+| =C-o=      | Open file (counsel-find-file)   |
+| =C-s=      | Save                            |
+| =C-f=      | Search (isearch from top)       |
+| =C-r=      | Reload config                   |
+| =C-z=      | Undo                            |
+| =M-z=      | Redo                            |
+| =C-a=      | Select all                      |
+| =C-t=      | Split pane right                |
+| =C-w=      | Close pane / buffer             |
+| =C-q=      | Quit Emacs                      |
+| =C-n=      | Go to scratch buffer            |
+| =C-=/C--=  | Font size up / down             |
+| =M-TAB=    | Next pane                       |
+| =M-S-TAB=  | Previous pane                   |
+| =C-{/C-}=  | Previous / next buffer          |
+
+*** Main Menu (=C-k=)
+
+Opened via transient. Submenus:
+
+| Key | Submenu   |
+|-----+-----------|
+| =f= | File      |
+| =b= | Buffers   |
+| =p= | Pane      |
+| =a= | Apps      |
+| =v= | View      |
+| =h= | Here (context-sensitive) |
+| =s= | Settings  |
+
+The *here* menu adapts to the current major mode: EWW, Elpher, ERC, Eat,
+Markdown, and Org each get a tailored set of actions.
+
+** Packages
+
+| Package           | Role                                      |
+|-------------------+-------------------------------------------|
+| straight.el       | Package manager (git-based, reproducible) |
+| use-package       | Package declaration DSL                   |
+| general           | Keybinding framework                      |
+| transient         | Menu / prefix key system                  |
+| ivy + counsel     | Incremental completion                    |
+| undo-tree         | Branching undo/redo (=C-x u= for tree)    |
+| which-key         | Keybinding popup (0.5 s idle)             |
+| reverse-im        | Keybindings work under Russian input      |
+| mood-line         | Minimal mode line                         |
+| dimmer            | Dims inactive panes                       |
+| olivetti          | Horizontal body centering (80 cols)       |
+| topspace          | Virtual space above line 1 for centering  |
+| eat               | Terminal emulator (pure Elisp)            |
+| eww               | Built-in web browser                      |
+| elpher            | Gemini / Gopher browser                   |
+| ace-link          | Hint-jump navigation for EWW and Elpher   |
+| erc               | IRC client (Libera.Chat TLS+SASL)         |
+| bookmark+         | Enhanced bookmarks shared across browsers |
+
+*** Themes available
+
+modus-themes, ef-themes, doom-themes, nord, gruvbox, solarized, ayu,
+catppuccin, lambda-themes, elegant-nano.
+
+Active theme is persisted to =theme.el= and restored on startup.
+Switch with =C-k s t= (settings → theme).
+
+** Modes
+
+- *Typewriter mode* (=C-k v t=) — cursor stays vertically centered using
+  =scroll-margin 999=. Disables =pixel-scroll-precision-mode= while active
+  (workaround for Emacs bug#66769).
+
+- *Center mode* (=C-k v c=) — olivetti narrows and centers the text body
+  horizontally.
+
+- *Org indent mode* — enabled automatically in org buffers; sub-headings
+  are visually indented. Monospace font enforced (overrides theme variable-pitch).
+
+- *ay-markdown-indent-mode* — custom minor mode that visually indents
+  markdown content by heading level, mirroring org-indent behaviour.
+
+** Frame
+
+On startup the frame is hidden (=early-init.el=), positioned to occupy the
+center third of the screen (matching the Hammerspoon =HYPER+v= layout: 12×8
+grid cell =x=4 y=1 w=4 h=6=), then made visible once the theme has loaded.
+Uses =frame-monitor-workarea= so it works correctly across screens and on Linux.
+
+A 40 px internal border is added and colored to match the theme background,
+giving breathing room without a visible bezel.
