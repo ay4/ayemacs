@@ -29,12 +29,12 @@
   (interactive)
   (if (one-window-p) (kill-buffer) (delete-window)))
 
-;; M-TAB / M-S-TAB cycle panes; C-{ / C-} cycle tabs
+;; M-TAB / M-S-TAB / C-S-a / C-S-d cycle panes
 (general-define-key
  "M-TAB"   'other-window
  "M-S-TAB" (lambda () (interactive) (other-window -1))
- "C-{"     'centaur-tabs-backward
- "C-}"     'centaur-tabs-forward)
+ "C-S-a"   (lambda () (interactive) (other-window -1))
+ "C-S-d"   'other-window)
 
 
 ;; ──────────────────────────────────────────
