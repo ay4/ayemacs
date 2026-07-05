@@ -465,6 +465,8 @@
   ;; Replace dired with dirvish everywhere (dired remains the backend).
   (dirvish-override-dired-mode)
   :config
+  ;; ~/bin/ls is an eza wrapper; dired needs the real GNU ls.
+  (setq insert-directory-program "/bin/ls")
   ;; No auto full-frame; ay-dirvish manages the split manually.
   (setq dirvish-default-layout nil)
   ;; Inline columns: file size and modification time.
