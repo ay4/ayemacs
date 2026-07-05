@@ -69,60 +69,6 @@
 ;; Centaur Tabs
 ;; ──────────────────────────────────────────
 
-;; centaur-tabs: visual tab bar for open buffers.
-;; C-S-p / C-S-; cycle tabs (matching Firefox convention per STANDARDS.md).
-;; Tab-line sits above the mode-line; true bottom placement isn't supported.
-(use-package centaur-tabs
-  :straight t
-  :demand t
-  :config
-  (setq centaur-tabs-style "bar"
-        centaur-tabs-height 12
-        centaur-tabs-bar-height 12
-        centaur-tabs-set-icons nil
-        centaur-tabs-set-bar 'under
-        centaur-tabs-show-count nil
-        centaur-tabs-show-new-tab-button nil
-        centaur-tabs-cycle-scope 'tabs)
-  ;; Hide system/noise buffers from the tab bar.
-  ;; centaur-tabs-excluded-prefixes is used by centaur-tabs-hide-tab, which
-  ;; controls tab-bar VISIBILITY inside those buffers — but NOT which buffers
-  ;; appear as tabs in other buffers. That is controlled by
-  ;; centaur-tabs-buffer-list-function. We override it here so the same prefix
-  ;; list drives both: excluded buffers won't appear as tabs anywhere.
-  (setq centaur-tabs-excluded-prefixes
-        '("*Messages*" "*Warnings*" "*Async-native-compile" "*Compile-Log" "*straight-"))
-  (setq centaur-tabs-buffer-list-function
-        (lambda ()
-          (seq-filter
-           (lambda (b)
-             (let ((name (buffer-name b)))
-               (not (cl-some (lambda (prefix) (string-prefix-p prefix name))
-                             centaur-tabs-excluded-prefixes))))
-           (centaur-tabs-buffer-list))))
-  ;; Put all buffers in one group so tabs from files and special buffers
-  ;; are always visible together rather than split across tab groups.
-  (setq centaur-tabs-buffer-groups-function
-        (lambda () '("all")))
-  (centaur-tabs-mode t)
-  ;; Center tabs horizontally. string-width gives display columns;
-  ;; window-width gives columns available — accurate in a monospace font.
-  (defun ay-centaur-tabs-center (orig-fn)
-    (let ((result (funcall orig-fn)))
-      (if (stringp result)
-          (let* ((pad (max 0 (/ (- (window-width) (string-width result)) 2))))
-            (if (> pad 0)
-                (concat (make-string pad ?\s) result)
-              result))
-        result)))
-  (advice-add 'centaur-tabs-line :around #'ay-centaur-tabs-center)
-  ;; Re-apply after theme changes so tab faces stay in sync.
-  (advice-add 'load-theme :after (lambda (&rest _) (centaur-tabs-mode t)))
-  :bind
-  (("C-S-p" . centaur-tabs-backward)
-   ("C-S-;" . centaur-tabs-forward)
-   ;; Shift+; = : in most terminals/GUI, so bind both forms.
-   ("C-:" . centaur-tabs-forward)))
 
 
 ;; ──────────────────────────────────────────

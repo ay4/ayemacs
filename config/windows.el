@@ -3,7 +3,7 @@
 ;; Contents:
 ;;   - ay-split-right / ay-split-below
 ;;   - ay-close-pane-or-buffer
-;;   - M-TAB / M-S-TAB pane cycling, C-{ / C-} buffer cycling keybindings
+;;   - M-TAB / M-S-TAB / C-{ / C-} pane cycling keybindings
 ;;   - dimmer (inactive pane dimming, ERC + transient exclusions)
 
 
@@ -29,12 +29,12 @@
   (interactive)
   (if (one-window-p) (kill-buffer) (delete-window)))
 
-;; M-TAB / M-S-TAB cycle panes, C-{ / C-} cycle buffers
+;; M-TAB / M-S-TAB and C-{ / C-} cycle panes
 (general-define-key
  "M-TAB"   'other-window
  "M-S-TAB" (lambda () (interactive) (other-window -1))
- "C-{"     (lambda () (interactive) (previous-buffer))
- "C-}"     'next-buffer)
+ "C-{"     (lambda () (interactive) (other-window -1))
+ "C-}"     'other-window)
 
 
 ;; ──────────────────────────────────────────
