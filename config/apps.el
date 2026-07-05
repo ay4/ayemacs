@@ -25,7 +25,7 @@
   :defer t
   :config
   (setq eat-kill-buffer-on-exit t)
-  (setq eat-shell "/bin/zsh")
+  (setq eat-shell "/bin/bash")
   (setq eat-term-name "xterm-256color")
   (setq eat-query-before-killing-running-terminal nil)
 
@@ -47,10 +47,13 @@
       (deactivate-mark)))
 
   ;; All custom eat keybindings live in an emulation-mode-map, which has
-  ;; higher priority than both eat's own semi-char keymap (which gets
-  ;; regenerated, losing any bindings set on it) and CUA mode (which
-  ;; intercepts C-c as a prefix key). Keyed on eat--semi-char-mode
-  ;; (the internal minor mode variable, double-dash).
+  ;; higher priority than both eat's own semi-char/char keymaps (which get
+  ;; regenerated, losing any bindings set on them) and CUA mode (which
+  ;; intercepts C-c as a prefix key). Keyed on eat--semi-char-mode and
+  ;; eat--char-mode (the internal minor mode variables, double-dash) so it
+  ;; applies in both keybinding modes - in particular C-k must keep opening
+  ;; `ay-menu' even in char-mode (used by e.g. `ay-matrix'/gomuks), not get
+  ;; forwarded to whatever program is running in the terminal.
   (defvar ay-eat-override-map (make-sparse-keymap))
   (define-key ay-eat-override-map (kbd "C-c") #'ay-eat-send-c-c)
   (define-key ay-eat-override-map (kbd "C-S-c") #'ay-eat-copy)
@@ -70,8 +73,39 @@
   (define-key ay-eat-override-map (kbd "C-<right>")
     (lambda () (interactive)
       (process-send-string (get-buffer-process (current-buffer)) "\ef")))
-  (defvar ay-eat-emulation-alist `((eat--semi-char-mode . ,ay-eat-override-map)))
+  (defvar ay-eat-emulation-alist `((eat--semi-char-mode . ,ay-eat-override-map)
+                                    (eat--char-mode . ,ay-eat-override-map)))
   (add-to-list 'emulation-mode-map-alists 'ay-eat-emulation-alist))
+
+
+;; ──────────────────────────────────────────
+;; Matrix (gomuks, via eat)
+;; ──────────────────────────────────────────
+
+;; gomuks is a standalone Go TUI (see ~/setup/journal 032-033), launched via
+;; the `matrix' shell alias. It owns a lot of Ctrl/Alt+arrow and Ctrl+Home/
+;; End bindings that eat's "semi-char" mode never forwards to the terminal at
+;; all (see `eat-semi-char-non-bound-keys'), so switching to char-mode as
+;; soon as gomuks starts lets those reach it. C-k still opens the global
+;; `ay-menu' rather than reaching gomuks's own "fuzzy search rooms" binding -
+;; `ay-eat-override-map' above is wired into char-mode too specifically so
+;; that carve-out holds; everything else not in that map still passes
+;; straight through.
+(defun ay-matrix ()
+  "Launch gomuks (Matrix TUI client) in a dedicated eat buffer, in char-mode."
+  (interactive)
+  (require 'eat)
+  (let ((buf (get-buffer-create "*matrix*")))
+    (with-current-buffer buf
+      (unless (eq major-mode 'eat-mode)
+        (eat-mode))
+      (pop-to-buffer-same-window buf)
+      (unless (and eat-terminal
+                   (eat-term-parameter eat-terminal 'eat--process))
+        ;; Full path, not the `matrix' alias: the Emacs daemon runs under
+        ;; systemd (emacs.service), whose PATH doesn't include ~/bin.
+        (eat-exec buf (buffer-name) "/home/ay4/.local/bin/gomuks-new" nil nil))
+      (eat-char-mode))))
 
 
 ;; ──────────────────────────────────────────
@@ -248,7 +282,7 @@
 
   (defun ay-erc-send (cmd)
     "Send raw IRC command CMD in current ERC buffer."
-    (erc-send-command cmd))
+    (erc-server-send cmd))
 
   (defun ay-erc-list ()
     "Send IRC LIST to get channel list."
@@ -311,3 +345,160 @@
   :defer t
   :config
   (setq bookmark-save-flag 1)) ; auto-save bookmarks on every change
+
+
+;; ──────────────────────────────────────────
+;; Multitran
+;; ──────────────────────────────────────────
+
+;; multitran: English<->Russian dictionary lookup, defaults to word at point.
+;; Bound as "m" in every "here" menu (see menus.el).
+(use-package multitran
+  :straight (multitran :type git :host github :repo "zevlg/multitran.el")
+  :commands multitran
+  :config
+  ;; multitran calls plain `pop-to-buffer', which by default pops open a
+  ;; new window/pane. Reuse the current window instead.
+  (add-to-list 'display-buffer-alist
+               '("\\*multitran\\*" (display-buffer-same-window))))
+
+
+;; ──────────────────────────────────────────
+;; Telega (Telegram)
+;; ──────────────────────────────────────────
+
+;; telega: Telegram client. Requires TDLib 1.8.64 built from source and
+;; installed to /usr/local (headers at /usr/local/include/td/, library at
+;; /usr/local/lib/libtdjson.so). Build telega-server with M-x telega-server-build.
+(use-package telega
+  :straight (telega :type git :host github :repo "zevlg/telega.el"
+                     :files (:defaults "etc" "server" "contrib" "Makefile"))
+  :commands telega
+  :config
+  ;; TDLib installed to /usr/local (the default, but explicit for clarity).
+  (setq telega-server-libs-prefix "/usr/local")
+  (setq telega-use-images t)
+  (setq telega-root-default-view-function 'telega-view-compact)
+  (setq telega-chat-show-avatars nil)
+  (setq telega-root-show-avatars nil)
+  (setq telega-emoji-use-images nil)
+
+  ;; IRC-like message format: <Dima Neiaglov>: Hello
+  (defun my/telega-ins--msg-sender (msg &rest _args)
+    (let ((sender (telega-msg-sender msg)))
+      (telega-ins "<")
+      (telega-ins (telega-msg-sender-title sender))
+      (telega-ins ">")))
+  (setq telega-inserter-for-msg-sender #'my/telega-ins--msg-sender)
+
+  (telega-notifications-mode 1))
+
+;; Thin, always-defined wrapper used by `ay-apps-menu' (menus.el) instead of
+;; the `telega' symbol directly. transient force-loads any autoloaded
+;; command referenced as a menu suffix the instant the menu is constructed
+;; (`transient--load-command-if-autoload', called from
+;; `transient--init-suffix'), not when the suffix is actually selected -
+;; confirmed by tracing a `provide' breakpoint back through that call chain.
+;; telega is heavy enough that this is a visible pause the first time the
+;; apps menu is opened at all, even without picking "telegram". Since this
+;; wrapper is a plain defun, not an autoload stub, transient leaves it
+;; alone, and `telega' only autoloads for real on the one call inside it.
+(defun ay-telega ()
+  "Launch telega, deferring its (heavy) autoload to this exact call."
+  (interactive)
+  (telega))
+
+
+
+;; ──────────────────────────────────────────
+;; Dirvish (file manager)
+;; ──────────────────────────────────────────
+
+;; Toggle mark on the file at point and move to the next line.
+;; dired-mark alone doesn't unmark, so we check the marker char first.
+(defun ay-dired-mark-toggle ()
+  (interactive)
+  (if (eq (char-after (line-beginning-position)) ?*)
+      (dired-unmark 1)
+    (dired-mark 1)))
+
+(defun ay-dirvish ()
+  (interactive)
+  (dired default-directory))
+
+;; Clipboard-style file staging so C-c/C-x/C-v work like a GUI file manager.
+;; C-c stages marked files for copy, C-x for move; C-v executes in current dir.
+(defvar ay-dired-stage nil)
+
+(defun ay-dired-copy-stage ()
+  (interactive)
+  (let ((files (dired-get-marked-files)))
+    (setq ay-dired-stage (list :files files :op 'copy))
+    (message "Staged %d file(s) for copy" (length files))))
+
+(defun ay-dired-cut-stage ()
+  (interactive)
+  (let ((files (dired-get-marked-files)))
+    (setq ay-dired-stage (list :files files :op 'move))
+    (message "Staged %d file(s) for move" (length files))))
+
+(defun ay-dired-paste ()
+  (interactive)
+  (unless ay-dired-stage (user-error "Nothing staged — use C-c or C-x first"))
+  (let* ((files (plist-get ay-dired-stage :files))
+         (op    (plist-get ay-dired-stage :op))
+         (dest  (dired-current-directory)))
+    (dolist (f files)
+      (let ((target (expand-file-name (file-name-nondirectory f) dest)))
+        (if (eq op 'copy)
+            (copy-file f target t)
+          (rename-file f target t))))
+    (when (eq op 'move) (setq ay-dired-stage nil))
+    (revert-buffer)))
+
+(use-package dirvish
+  :straight t
+  :init
+  ;; Replace dired with dirvish everywhere (dired remains the backend).
+  (dirvish-override-dired-mode)
+  :config
+  ;; No auto full-frame; ay-dirvish manages the split manually.
+  (setq dirvish-default-layout nil)
+  ;; Inline columns: file size and modification time.
+  (setq dirvish-attributes '(file-size file-time))
+  ;; ls: include dotfiles in the listing (needed for dired-omit-mode toggle
+  ;; to work without a full buffer revert), but hide . and .. themselves.
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --group-directories-first --no-group")
+  ;; dired-omit-mode (from dired-x) hides dotfiles from view by default.
+  ;; The files are still in the buffer; toggling is instant (no revert needed).
+  (require 'dired-x)
+  (setq dired-omit-files "^\\.")          ; hide anything starting with .
+  (setq dired-omit-verbose nil)           ; no "Omitting N files" message
+  (add-hook 'dired-mode-hook #'dired-omit-mode)
+  ;; Preview dispatchers in priority order.
+  ;; Needs: imagemagick (images), ffmpegthumbnailer (video).
+  (setq dirvish-preview-dispatchers '(image gif video audio pdf archive))
+  ;; Reuse the same buffer when navigating into subdirectories so each
+  ;; directory doesn't open a new tab.
+  (setq dired-kill-when-opening-new-dired-buffer t)
+  ;; Send deleted files to trash (F8 still asks for confirmation).
+  (setq delete-by-moving-to-trash t)
+  :bind
+  (:map dirvish-mode-map
+   ;; STANDARDS.md file manager keybindings
+   ("<f2>"          . dired-do-rename)       ; rename
+   ("<f4>"          . dired-find-file)        ; open in Emacs
+   ("<f5>"          . dired-do-copy)          ; copy → other pane dir
+   ("<f6>"          . dired-do-rename)        ; move → other pane dir
+   ("<f7>"          . dired-create-directory) ; mkdir
+   ("<f8>"          . dired-do-delete)        ; delete (→ trash)
+   ("C-<backspace>" . dired-do-delete)        ; delete alternate
+   ("<backspace>"   . dired-up-directory)     ; parent dir
+   ("SPC"           . ay-dired-mark-toggle)   ; mark/unmark
+   ("C-c"           . ay-dired-copy-stage)    ; copy  (stage, paste with C-v)
+   ("C-x"           . ay-dired-cut-stage)     ; cut   (stage, paste with C-v)
+   ("C-v"           . ay-dired-paste)         ; paste staged files here
+   ;; ` toggles full-frame preview layout (image/video/pdf panel)
+   ("`"             . dirvish-layout-toggle)))
+

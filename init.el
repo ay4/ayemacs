@@ -33,6 +33,19 @@
 (straight-use-package 'general)
 (straight-use-package 'esup)
 
+;; Force the newer transient (straight-built) to register and take
+;; load-path priority over Emacs's own bundled transient (0.7.2.2),
+;; which lacks functions like `transient--set-layout` that our
+;; transient-define-prefix menus (menus.el) and telega depend on.
+(straight-use-package 'transient)
+
+;; Multi-file packages (telega, magit, etc.) routinely produce benign
+;; "not known to be defined" warnings under async native-compilation,
+;; since each file is compiled in isolation before its sibling
+;; `require's are satisfied. Suppress entirely rather than just hiding
+;; the popup, since they're not actionable.
+(setq native-comp-async-report-warnings-errors nil)
+
 
 ;; ──────────────────────────────────────────
 ;; Performance

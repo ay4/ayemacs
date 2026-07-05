@@ -64,7 +64,9 @@
     ("g" "image"         markdown-insert-image)
     ("h" "heading"       markdown-insert-header-dwim)
     ("k" "code block"    markdown-insert-gfm-code-block)
-    ("r" "rule"          markdown-insert-hr)]])
+    ("r" "rule"          markdown-insert-hr)]
+   ["dictionary"
+    ("m" "multitran"     multitran)]])
 
 ;; ── Org ───────────────────────────────────
 (defun ay-org-bold () (interactive) (org-emphasize ?*))
@@ -97,7 +99,9 @@
     ("q" "quote block"   ay-org-quote-block)
     ("g" "image"         ay-org-insert-image)
     ("t" "toggle todo"   org-todo)
-    ("e" "export"        org-export-dispatch)]])
+    ("e" "export"        org-export-dispatch)]
+   ["dictionary"
+    ("m" "multitran"     multitran)]])
 
 ;; ── Pane / Window ─────────────────────────
 (transient-define-prefix ay-pane-menu ()
@@ -122,7 +126,10 @@
 (transient-define-prefix ay-apps-menu ()
   "Applications."
   [["apps"
-    ("t" "terminal"  eat)
+    ("f" "files"     ay-dirvish)
+    ("s" "shell"     eat)
+    ("t" "telegram"  ay-telega)
+    ("m" "matrix"    ay-matrix)
     ("b" "browser"   eww)
     ("g" "gemini"    elpher)
     ("i" "irc →"     ay-irc-menu)]])
@@ -142,7 +149,9 @@
     ("y" "copy link"    ay-eww-copy-link)]
    ["bookmarks"
     ("b" "list"         counsel-bookmark)
-    ("B" "add"          ay-eww-add-bookmark)]])
+    ("B" "add"          ay-eww-add-bookmark)]
+   ["dictionary"
+    ("m" "multitran"    multitran)]])
 
 (transient-define-prefix ay-here-elpher-menu ()
   "Elpher Gemini/Gopher actions."
@@ -155,7 +164,9 @@
     ("c" "copy link"    elpher-copy-link-url)]
    ["bookmarks"
     ("b" "list"         elpher-show-bookmarks)
-    ("B" "add"          elpher-bookmark-link)]])
+    ("B" "add"          elpher-bookmark-link)]
+   ["dictionary"
+    ("m" "multitran"    multitran)]])
 
 (transient-define-prefix ay-here-erc-menu ()
   "ERC IRC actions."
@@ -166,24 +177,50 @@
    ["channel"
     ("p" "part (leave)"  erc-part-from-channel)
     ("n" "names (members)" ay-erc-names)
-    ("t" "next active"   erc-track-switch-buffer)]])
+    ("t" "next active"   erc-track-switch-buffer)]
+   ["dictionary"
+    ("m" "multitran"     multitran)]])
 
 (transient-define-prefix ay-here-eat-menu ()
   "Eat terminal actions."
   [["terminal"
-    ("c" "clear"  eat-reset)]])
+    ("c" "clear"  eat-reset)]
+   ["dictionary"
+    ("m" "multitran" multitran)]])
+
+(transient-define-prefix ay-here-dirvish-menu ()
+  "Dirvish / dired actions."
+  [["files"
+    ("r" "rename       [F2]"  dired-do-rename)
+    ("o" "open         [F4]"  dired-find-file)
+    ("c" "copy         [F5]"  dired-do-copy)
+    ("v" "move         [F6]"  dired-do-rename)
+    ("d" "mkdir        [F7]"  dired-create-directory)
+    ("x" "delete       [F8]"  dired-do-delete)]
+   ["view"
+    ("h" "toggle hidden"      dired-omit-mode)
+    ("p" "preview panel  [`]" dirvish-layout-toggle)
+    ("R" "refresh"            revert-buffer)]
+   ["dictionary"
+    ("m" "multitran"          multitran)]])
+
+(transient-define-prefix ay-here-default-menu ()
+  "Fallback context menu for modes with no dedicated 'here' menu."
+  [["dictionary"
+    ("m" "multitran" multitran)]])
 
 (defun ay-here-menu ()
   "Open the context menu for the current major mode."
   (interactive)
   (cond
-   ((derived-mode-p 'eww-mode)      (ay-here-eww-menu))
-   ((derived-mode-p 'elpher-mode)   (ay-here-elpher-menu))
-   ((derived-mode-p 'eat-mode)      (ay-here-eat-menu))
-   ((derived-mode-p 'erc-mode)      (ay-here-erc-menu))
-   ((derived-mode-p 'markdown-mode) (ay-markdown-menu))
-   ((derived-mode-p 'org-mode)      (ay-org-menu))
-   (t (message "No context menu for this mode"))))
+   ((derived-mode-p 'dired-mode)       (ay-here-dirvish-menu))
+   ((derived-mode-p 'eww-mode)         (ay-here-eww-menu))
+   ((derived-mode-p 'elpher-mode)      (ay-here-elpher-menu))
+   ((derived-mode-p 'eat-mode)         (ay-here-eat-menu))
+   ((derived-mode-p 'erc-mode)         (ay-here-erc-menu))
+   ((derived-mode-p 'markdown-mode)    (ay-markdown-menu))
+   ((derived-mode-p 'org-mode)         (ay-org-menu))
+   (t (ay-here-default-menu))))
 
 ;; ── Main Menu ─────────────────────────────
 (transient-define-prefix ay-menu ()

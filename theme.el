@@ -1,1 +1,2 @@
-(load-theme 'modus-vivendi t)
+(setq catppuccin-flavor 'mocha)
+(load-theme 'catppuccin t)

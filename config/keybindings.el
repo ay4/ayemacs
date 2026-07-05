@@ -112,8 +112,9 @@
 (general-define-key "C-0" 'text-scale-adjust) ; C-0 resets to default
 (general-define-key "C-s" 'save-buffer)
 (general-define-key "C-n" (lambda () (interactive) (switch-to-buffer "*scratch*")))
-(general-define-key "C-t" 'ay-split-right)
-(general-define-key "C-w" 'ay-close-pane-or-buffer)
+(general-define-key "C-t" (lambda () (interactive)
+                             (switch-to-buffer (generate-new-buffer "untitled"))))
+(general-define-key "C-w" 'kill-current-buffer)
 (general-define-key "C-q" 'save-buffers-kill-emacs)
 
 (defun reload-config ()

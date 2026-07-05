@@ -39,6 +39,91 @@
   :config
   (mood-line-mode))
 
+;; Shrink mode line height: remove the default raised-button box and use a
+;; flat 1px border so the line takes only as much space as the text needs.
+(defun ay-compact-mode-line (&rest _)
+  (let ((border (face-attribute 'mode-line :background nil t)))
+    (set-face-attribute 'mode-line nil
+                        :height 0.85
+                        :box `(:line-width 1 :color ,border))
+    (set-face-attribute 'mode-line-inactive nil
+                        :height 0.85
+                        :box `(:line-width 1 :color ,border))))
+(add-hook 'after-init-hook #'ay-compact-mode-line)
+(advice-add 'load-theme :after #'ay-compact-mode-line)
+
+;; Shrink the tab-line font and add a small gap below the bar.
+;; :height controls font size (0.75 = 75% of default).
+;; :box (1 . 3) adds 3 px vertical padding in the tab-line background
+;; color, which reads as breathing room between tabs and buffer content.
+(defun ay-tab-line-style (&rest _)
+  (let ((bg (face-background 'tab-line nil 'default)))
+    (set-face-attribute 'tab-line nil
+                        :height 0.75
+                        :box (when bg `(:line-width (1 . 3) :color ,bg)))))
+(add-hook 'after-init-hook #'ay-tab-line-style)
+(advice-add 'load-theme :after #'ay-tab-line-style)
+
+
+;; ──────────────────────────────────────────
+;; Centaur Tabs
+;; ──────────────────────────────────────────
+
+;; centaur-tabs: visual tab bar for open buffers.
+;; C-S-p / C-S-; cycle tabs (matching Firefox convention per STANDARDS.md).
+;; Tab-line sits above the mode-line; true bottom placement isn't supported.
+(use-package centaur-tabs
+  :straight t
+  :demand t
+  :config
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-height 12
+        centaur-tabs-bar-height 12
+        centaur-tabs-set-icons nil
+        centaur-tabs-set-bar 'under
+        centaur-tabs-show-count nil
+        centaur-tabs-show-new-tab-button nil
+        centaur-tabs-cycle-scope 'tabs)
+  ;; Hide system/noise buffers from the tab bar.
+  ;; centaur-tabs-excluded-prefixes is used by centaur-tabs-hide-tab, which
+  ;; controls tab-bar VISIBILITY inside those buffers — but NOT which buffers
+  ;; appear as tabs in other buffers. That is controlled by
+  ;; centaur-tabs-buffer-list-function. We override it here so the same prefix
+  ;; list drives both: excluded buffers won't appear as tabs anywhere.
+  (setq centaur-tabs-excluded-prefixes
+        '("*Messages*" "*Warnings*" "*Async-native-compile" "*Compile-Log" "*straight-"))
+  (setq centaur-tabs-buffer-list-function
+        (lambda ()
+          (seq-filter
+           (lambda (b)
+             (let ((name (buffer-name b)))
+               (not (cl-some (lambda (prefix) (string-prefix-p prefix name))
+                             centaur-tabs-excluded-prefixes))))
+           (centaur-tabs-buffer-list))))
+  ;; Put all buffers in one group so tabs from files and special buffers
+  ;; are always visible together rather than split across tab groups.
+  (setq centaur-tabs-buffer-groups-function
+        (lambda () '("all")))
+  (centaur-tabs-mode t)
+  ;; Center tabs horizontally. string-width gives display columns;
+  ;; window-width gives columns available — accurate in a monospace font.
+  (defun ay-centaur-tabs-center (orig-fn)
+    (let ((result (funcall orig-fn)))
+      (if (stringp result)
+          (let* ((pad (max 0 (/ (- (window-width) (string-width result)) 2))))
+            (if (> pad 0)
+                (concat (make-string pad ?\s) result)
+              result))
+        result)))
+  (advice-add 'centaur-tabs-line :around #'ay-centaur-tabs-center)
+  ;; Re-apply after theme changes so tab faces stay in sync.
+  (advice-add 'load-theme :after (lambda (&rest _) (centaur-tabs-mode t)))
+  :bind
+  (("C-S-p" . centaur-tabs-backward)
+   ("C-S-;" . centaur-tabs-forward)
+   ;; Shift+; = : in most terminals/GUI, so bind both forms.
+   ("C-:" . centaur-tabs-forward)))
+
 
 ;; ──────────────────────────────────────────
 ;; Frame Border
@@ -46,7 +131,7 @@
 
 ;; Adds 40 px of invisible padding around the frame: the internal border is
 ;; set to match the theme background so it blends in rather than standing out.
-(defvar ay-frame-border-width 40
+(defvar ay-frame-border-width 6
   "Internal border width in pixels — visual breathing room around the frame.")
 
 (defun ay-setup-frame-border (&rest _)
@@ -96,7 +181,7 @@
 (straight-use-package 'gruvbox-theme)
 (straight-use-package 'solarized-theme)
 (straight-use-package 'ayu-theme)
-(straight-use-package 'catppuccin-theme)
+(straight-use-package '(catppuccin-theme :type git :host github :repo "catppuccin/emacs" :local-repo "catppuccin-emacs"))
 (straight-use-package '(lambda-themes :type git :host github :repo "Lambda-Emacs/lambda-themes"))
 (straight-use-package '(elegant-nano  :type git :host github :repo "oracleyue/elegant-theme"))
 (straight-use-package 'ef-themes)
@@ -105,6 +190,8 @@
 
 (defun ay-save-theme (theme)
   (with-temp-file (expand-file-name "theme.el" user-emacs-directory)
+    (when (eq theme 'catppuccin)
+      (insert "(setq catppuccin-flavor 'mocha)\n"))
     (insert (format "(load-theme '%s t)\n" theme))))
 
 (defun ay-pick-theme ()
