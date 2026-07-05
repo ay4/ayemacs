@@ -423,8 +423,11 @@
     (dired-mark 1)))
 
 (defun ay-dirvish ()
+  "Open a dirvish/dired buffer for the current directory in a right split."
   (interactive)
-  (dired default-directory))
+  (let ((dir default-directory))
+    (ay-split-right)
+    (dired dir)))
 
 ;; Clipboard-style file staging so C-c/C-x/C-v work like a GUI file manager.
 ;; C-c stages marked files for copy, C-x for move; C-v executes in current dir.
