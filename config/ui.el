@@ -42,13 +42,14 @@
 ;; Shrink mode line height: remove the default raised-button box and use a
 ;; flat 1px border so the line takes only as much space as the text needs.
 (defun ay-compact-mode-line (&rest _)
-  (let ((border (face-attribute 'mode-line :background nil t)))
+  (let* ((border (face-attribute 'mode-line :background nil t))
+         (color  (if (eq border 'unspecified) nil border)))
     (set-face-attribute 'mode-line nil
                         :height 0.85
-                        :box `(:line-width 1 :color ,border))
+                        :box `(:line-width 1 :color ,color))
     (set-face-attribute 'mode-line-inactive nil
                         :height 0.85
-                        :box `(:line-width 1 :color ,border))))
+                        :box `(:line-width 1 :color ,color))))
 (add-hook 'after-init-hook #'ay-compact-mode-line)
 (advice-add 'load-theme :after #'ay-compact-mode-line)
 
@@ -69,6 +70,38 @@
 ;; Centaur Tabs
 ;; ──────────────────────────────────────────
 
+(use-package centaur-tabs
+  :straight t
+  :demand t
+  :config
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-height 12
+        centaur-tabs-bar-height 12
+        centaur-tabs-set-icons nil
+        centaur-tabs-set-bar 'under
+        centaur-tabs-show-count nil
+        centaur-tabs-show-new-tab-button nil
+        centaur-tabs-cycle-scope 'tabs)
+  (setq centaur-tabs-excluded-prefixes
+        '("*Messages*" "*Warnings*" "*Async-native-compile" "*Compile-Log" "*straight-"))
+  (setq centaur-tabs-buffer-list-function
+        (lambda ()
+          (seq-filter
+           (lambda (b)
+             (let ((name (buffer-name b)))
+               (not (cl-some (lambda (prefix) (string-prefix-p prefix name))
+                             centaur-tabs-excluded-prefixes))))
+           (centaur-tabs-buffer-list))))
+  (setq centaur-tabs-buffer-groups-function (lambda () '("all")))
+  (centaur-tabs-mode t)
+  (defun ay-centaur-tabs-center (orig-fn)
+    (let ((result (funcall orig-fn)))
+      (if (stringp result)
+          (let* ((pad (max 0 (/ (- (window-width) (string-width result)) 2))))
+            (if (> pad 0) (concat (make-string pad ?\s) result) result))
+        result)))
+  (advice-add 'centaur-tabs-line :around #'ay-centaur-tabs-center)
+  (advice-add 'load-theme :after (lambda (&rest _) (centaur-tabs-mode t))))
 
 
 ;; ──────────────────────────────────────────
