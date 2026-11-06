@@ -7,7 +7,7 @@
 ;;   - Frame border (40 px padding matching theme background)
 ;;   - Line numbers (prog-mode only)
 ;;   - Theme packages + ay-pick-theme
-;;   - Monospace heading enforcement (org, markdown)
+;;   - Monospace heading enforcement (org, markdown, asciidoc)
 ;;   - Startup state (load saved theme)
 
 
@@ -128,7 +128,6 @@
 (straight-use-package '(lambda-themes :type git :host github :repo "Lambda-Emacs/lambda-themes"))
 (straight-use-package '(elegant-nano  :type git :host github :repo "oracleyue/elegant-theme"))
 (straight-use-package 'ef-themes)
-(straight-use-package 'doom-themes)
 ;; modus-vivendi / modus-vivendi-tinted are built-in — no install needed
 
 (defun ay-save-theme (theme)
@@ -155,7 +154,9 @@
 ;; uniform height. Re-applied after every theme load so themes
 ;; that set variable-pitch or enlarged headings get overridden.
 (defun ay-enforce-monospace-headings (&rest _)
-  "Reset heading faces to monospace font; org headings at body size, markdown slightly smaller."
+  "Reset heading faces to monospace font.
+Org headings sit at body size, markdown slightly larger, and
+asciidoc titles are matched to markdown's."
   (let ((family (face-attribute 'default :family)))
     (dolist (face '(org-level-1 org-level-2 org-level-3 org-level-4
                     org-level-5 org-level-6 org-level-7 org-level-8))
@@ -166,13 +167,36 @@
                     markdown-header-face-3 markdown-header-face-4
                     markdown-header-face-5 markdown-header-face-6))
       (when (facep face)
-        (set-face-attribute face nil :family family :height 1.1)))))
+        (set-face-attribute face nil :family family :height 1.1)))
+    ;; AsciiDoc titles reuse the markdown header faces outright, so adoc
+    ;; buffers get identical heading styling (size, weight, theme colour).
+    ;; adoc levels are 0-based and start at the document title, so
+    ;; adoc-title-N maps onto markdown-header-face-(N+1).
+    (when (facep 'adoc-title-face)
+      (set-face-attribute 'adoc-title-face nil :family family :height 1.0))
+    (dotimes (n 6)
+      (let ((face (intern (format "adoc-title-%d-face" n)))
+            (md   (intern (format "markdown-header-face-%d" (1+ n)))))
+        (when (facep face)
+          (if (facep md)
+              ;; :height unspecified so the inherited markdown size applies
+              ;; as-is rather than scaling on top of it.
+              (set-face-attribute face nil :inherit md
+                                  :family 'unspecified :height 'unspecified)
+            (set-face-attribute face nil :family family :height 1.1)))))))
 
 (advice-add 'load-theme :after #'ay-enforce-monospace-headings)
 
-;; Re-apply after org/markdown load — faces don't exist until first use
+;; Re-apply after org/markdown/adoc load — faces don't exist until first use
 (with-eval-after-load 'org (ay-enforce-monospace-headings))
 (with-eval-after-load 'markdown-mode (ay-enforce-monospace-headings))
+(with-eval-after-load 'adoc-mode
+  ;; adoc-mode scales its own title faces (2.0 … 1.0) at load time;
+  ;; markdown's faces are adopted instead, so switch that off.
+  (setq adoc-title-scaling nil)
+  ;; markdown-mode must be loaded for its header faces to exist.
+  (require 'markdown-mode nil t)
+  (ay-enforce-monospace-headings))
 
 
 ;; ──────────────────────────────────────────

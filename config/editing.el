@@ -9,7 +9,8 @@
 ;;   - Which-key (keybinding popup)
 ;;   - Ivy / Counsel (completion framework)
 ;;   - Org mode (indent, folding, shift-select)
-;;   - Markdown mode (folding, ay-markdown-indent-mode)
+;;   - Markdown & AsciiDoc modes (folding, ay-heading-indent-mode)
+;;   - Preview (ay-preview: markdown/asciidoc/org → HTML)
 ;;   - Typewriter mode (cursor centered, scroll-margin 999 + topspace)
 ;;   - Olivetti (center mode — horizontal body centering)
 ;;   - Visual line mode (word-wrap globally)
@@ -124,7 +125,7 @@
 
 
 ;; ──────────────────────────────────────────
-;; Markdown Mode
+;; Markdown / AsciiDoc Modes
 ;; ──────────────────────────────────────────
 
 ;; markdown-cycle via TAB: folds/unfolds heading sections
@@ -135,13 +136,46 @@
   :config
   (general-define-key :keymaps 'markdown-mode-map "TAB" 'markdown-cycle))
 
-;; ay-markdown-indent-mode: visual indentation by heading level,
+;; adoc-mode: AsciiDoc, set up to behave exactly like markdown-mode —
+;; adoc-cycle on TAB folds/unfolds heading sections, ay-heading-indent-mode
+;; indents by level, and ui.el maps its title faces onto markdown's.
+;; :defer t — only loads when a .adoc/.asciidoc file is opened
+(use-package adoc-mode
+  :straight t
+  :defer t
+  :config
+  (general-define-key :keymaps 'adoc-mode-map
+    "TAB" 'adoc-cycle
+    ;; adoc-mode claims M-<left>/M-<right> for promote/demote, which
+    ;; shadows word-by-word motion everywhere else in Emacs. Hand the
+    ;; arrows back and move promote/demote onto M-S-<left>/M-S-<right>
+    ;; (they are also in the asciidoc menu under "list").
+    "M-<left>"    nil
+    "M-<right>"   nil
+    "M-S-<left>"  'adoc-promote
+    "M-S-<right>" 'adoc-demote))
+
+;; ay-heading-indent-mode: visual indentation by heading level,
 ;; like org-indent-mode. Shifts content rightward using line-prefix
 ;; and wrap-prefix text properties based on the parent heading depth.
-(defvar ay-markdown-indent-width 3
+;; The heading syntax is per-buffer, so one mode serves both markdown
+;; (# heading) and asciidoc (= heading).
+(defvar ay-heading-indent-width 3
   "Columns of visual indentation per heading level.")
 
-(defun ay--markdown-indent-fontify (beg end)
+(defvar-local ay-heading-indent-regexp "^\\(#\\{1,6\\}\\) "
+  "Regexp matching a heading line for `ay-heading-indent-mode'.
+Must be anchored at `^'; the length of group 1 is the heading level.")
+
+(defun ay--heading-indent-level-at (pos)
+  "Heading level in effect at POS, or 0 above the first heading."
+  (save-excursion
+    (goto-char pos)
+    (if (re-search-backward ay-heading-indent-regexp nil t)
+        (- (match-end 1) (match-beginning 1))
+      0)))
+
+(defun ay--heading-indent-fontify (beg end)
   "Set line-prefix and wrap-prefix between BEG and END by heading level."
   (with-silent-modifications
     (save-excursion
@@ -150,14 +184,11 @@
       (goto-char end)
       (setq end (line-end-position))
       (goto-char beg)
-      (let ((level 0))
-        (save-excursion
-          (when (re-search-backward "^\\(#\\{1,6\\}\\) " nil t)
-            (setq level (- (match-end 1) (match-beginning 1)))))
+      (let ((level (ay--heading-indent-level-at beg)))
         (while (and (<= (point) end) (not (eobp)))
-          (when (looking-at "\\(#\\{1,6\\}\\) ")
+          (when (looking-at ay-heading-indent-regexp)
             (setq level (- (match-end 1) (match-beginning 1))))
-          (let* ((indent (* (max 0 (1- level)) ay-markdown-indent-width))
+          (let* ((indent (* (max 0 (1- level)) ay-heading-indent-width))
                  (prefix (make-string indent ?\s))
                  (eol (min (1+ (line-end-position)) (point-max))))
             (put-text-property (point) eol 'line-prefix prefix)
@@ -168,47 +199,148 @@
 ;; RET at end of buffer the cursor would sit at column 0 until the first
 ;; keystroke. A zero-width overlay at point-max draws the prefix instead;
 ;; the cursor lands after a before-string, i.e. at the indented position.
-(defvar-local ay--markdown-indent-eob-ov nil)
+(defvar-local ay--heading-indent-eob-ov nil)
 
-(defun ay--markdown-indent-eob ()
+(defun ay--heading-indent-eob ()
   "Show the heading-level prefix on an empty last line."
   (let ((empty-last (or (= (point-min) (point-max))
                         (eq (char-before (point-max)) ?\n))))
     (if (not empty-last)
-        (when ay--markdown-indent-eob-ov
-          (delete-overlay ay--markdown-indent-eob-ov))
-      (let ((level 0))
-        (save-excursion
-          (goto-char (point-max))
-          (when (re-search-backward "^\\(#\\{1,6\\}\\) " nil t)
-            (setq level (- (match-end 1) (match-beginning 1)))))
-        (let ((prefix (make-string (* (max 0 (1- level))
-                                      ay-markdown-indent-width)
-                                   ?\s)))
-          (unless (overlayp ay--markdown-indent-eob-ov)
-            (setq ay--markdown-indent-eob-ov
-                  (make-overlay (point-max) (point-max) nil t nil)))
-          (move-overlay ay--markdown-indent-eob-ov (point-max) (point-max))
-          (overlay-put ay--markdown-indent-eob-ov 'before-string prefix))))))
+        (when ay--heading-indent-eob-ov
+          (delete-overlay ay--heading-indent-eob-ov))
+      (let* ((level (ay--heading-indent-level-at (point-max)))
+             (prefix (make-string (* (max 0 (1- level))
+                                     ay-heading-indent-width)
+                                  ?\s)))
+        (unless (overlayp ay--heading-indent-eob-ov)
+          (setq ay--heading-indent-eob-ov
+                (make-overlay (point-max) (point-max) nil t nil)))
+        (move-overlay ay--heading-indent-eob-ov (point-max) (point-max))
+        (overlay-put ay--heading-indent-eob-ov 'before-string prefix)))))
 
-(define-minor-mode ay-markdown-indent-mode
-  "Visually indent markdown content by heading level."
+(define-minor-mode ay-heading-indent-mode
+  "Visually indent buffer content by heading level."
   :lighter nil
-  (if ay-markdown-indent-mode
+  (if ay-heading-indent-mode
       (progn
-        (jit-lock-register #'ay--markdown-indent-fontify)
-        (ay--markdown-indent-fontify (point-min) (point-max))
-        (add-hook 'post-command-hook #'ay--markdown-indent-eob nil t)
-        (ay--markdown-indent-eob))
-    (jit-lock-unregister #'ay--markdown-indent-fontify)
-    (remove-hook 'post-command-hook #'ay--markdown-indent-eob t)
-    (when ay--markdown-indent-eob-ov
-      (delete-overlay ay--markdown-indent-eob-ov))
+        (jit-lock-register #'ay--heading-indent-fontify)
+        (ay--heading-indent-fontify (point-min) (point-max))
+        (add-hook 'post-command-hook #'ay--heading-indent-eob nil t)
+        (ay--heading-indent-eob))
+    (jit-lock-unregister #'ay--heading-indent-fontify)
+    (remove-hook 'post-command-hook #'ay--heading-indent-eob t)
+    (when ay--heading-indent-eob-ov
+      (delete-overlay ay--heading-indent-eob-ov))
     (with-silent-modifications
       (remove-text-properties (point-min) (point-max)
                               '(line-prefix nil wrap-prefix nil)))))
 
-(add-hook 'markdown-mode-hook #'ay-markdown-indent-mode)
+(defun ay--markdown-heading-indent ()
+  (setq-local ay-heading-indent-regexp "^\\(#\\{1,6\\}\\) ")
+  (ay-heading-indent-mode 1))
+
+(defun ay--adoc-heading-indent ()
+  ;; AsciiDoc one-line titles: "= Title", "== Section", … up to level 6.
+  (setq-local ay-heading-indent-regexp "^\\(=\\{1,6\\}\\) ")
+  (ay-heading-indent-mode 1))
+
+(add-hook 'markdown-mode-hook #'ay--markdown-heading-indent)
+(add-hook 'adoc-mode-hook     #'ay--adoc-heading-indent)
+
+
+;; ──────────────────────────────────────────
+;; Preview
+;; ──────────────────────────────────────────
+
+;; ay-preview renders the current markdown / asciidoc / org buffer to HTML
+;; and opens it: pandoc for markdown, asciidoctor for asciidoc, org's own
+;; exporter for org. The buffer is piped in as it stands, so previewing an
+;; unsaved draft works.
+;;
+;; The HTML is written as a hidden file beside the source, so relative
+;; image and stylesheet paths resolve exactly as in the final document.
+;; Every file written this way is deleted when Emacs exits.
+
+(defvar ay-preview-in-eww nil
+  "When non-nil, open previews in eww instead of the system browser.")
+
+(defvar ay-preview-pandoc-args
+  '("-f" "gfm" "-t" "html5" "--standalone")
+  "Pandoc arguments used to render markdown previews.")
+
+(defvar ay--preview-files nil
+  "Preview files written in this session, deleted when Emacs exits.")
+
+(defun ay--preview-file ()
+  "Path of the preview HTML for the current buffer."
+  (if buffer-file-name
+      (expand-file-name (format ".%s-preview.html"
+                                (file-name-base buffer-file-name))
+                        (file-name-directory buffer-file-name))
+    (expand-file-name (format ".%s-preview.html"
+                              (replace-regexp-in-string
+                               "[^A-Za-z0-9]+" "-" (buffer-name)))
+                      temporary-file-directory)))
+
+(defun ay--preview-program (program hint)
+  "Return PROGRAM's full path, or fail with an install HINT."
+  (or (executable-find program)
+      (user-error "%s is not installed — run: %s" program hint)))
+
+(defun ay--preview-render (program args out)
+  "Pipe the buffer through PROGRAM with ARGS, writing the HTML to OUT."
+  ;; call-process-region wants a *file* for stderr, not a buffer.
+  (let ((html (generate-new-buffer " *ay-preview*"))
+        (err  (make-temp-file "ay-preview-stderr")))
+    (unwind-protect
+        (let ((status (apply #'call-process-region (point-min) (point-max)
+                             program nil (list html err) nil args)))
+          (unless (eq status 0)
+            (user-error "%s failed: %s"
+                        (file-name-nondirectory program)
+                        (string-trim
+                         (with-temp-buffer (insert-file-contents err)
+                                           (buffer-string)))))
+          (with-current-buffer html
+            (write-region (point-min) (point-max) out nil 'quiet)))
+      (kill-buffer html)
+      (ignore-errors (delete-file err)))))
+
+(defun ay--preview-cleanup ()
+  "Delete every preview file written in this session."
+  (dolist (f ay--preview-files)
+    (when (file-exists-p f) (ignore-errors (delete-file f)))))
+
+(add-hook 'kill-emacs-hook #'ay--preview-cleanup)
+
+(defun ay-preview ()
+  "Render the current document to HTML and open the result."
+  (interactive)
+  (let ((out (ay--preview-file))
+        (dir (or (and buffer-file-name (file-name-directory buffer-file-name))
+                 default-directory)))
+    (cond
+     ((derived-mode-p 'markdown-mode)
+      (ay--preview-render
+       (ay--preview-program "pandoc" "brew install pandoc")
+       (append ay-preview-pandoc-args
+               (list "--metadata" (format "title=%s" (buffer-name))))
+       out))
+     ((derived-mode-p 'adoc-mode)
+      (ay--preview-render
+       (ay--preview-program "asciidoctor" "brew install asciidoctor")
+       ;; -B sets the base directory for include:: directives; "-o -" and the
+       ;; trailing "-" make asciidoctor read stdin and write stdout.
+       (list "-B" (expand-file-name dir) "-o" "-" "-")
+       out))
+     ((derived-mode-p 'org-mode)
+      (require 'ox-html)
+      (org-export-to-file 'html out))
+     (t (user-error "No preview for %s" major-mode)))
+    (unless (member out ay--preview-files)
+      (push out ay--preview-files))
+    (if ay-preview-in-eww (eww-open-file out) (browse-url-of-file out))
+    (message "Preview: %s" (abbreviate-file-name out))))
 
 
 ;; ──────────────────────────────────────────
