@@ -9,3 +9,7 @@ auto-save-list/
 backup/
 *~
 \#*\#
+
+# Per-machine state
+recentf.eld
+.claude/

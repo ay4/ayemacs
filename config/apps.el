@@ -1,3 +1,4 @@
+;;; apps.el --- -*- lexical-binding: t; -*-
 ;; apps.el — Application packages: terminal, browsers, IRC, bookmarks
 ;;
 ;; Contents:

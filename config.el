@@ -1,3 +1,4 @@
+;;; config.el --- -*- lexical-binding: t; -*-
 ;; config.el — User configuration loader
 ;;
 ;; Loads topic-specific config files from ~/.emacs.d/config/ in order.
