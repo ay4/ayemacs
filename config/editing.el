@@ -1,3 +1,4 @@
+;;; editing.el --- -*- lexical-binding: t; -*-
 ;; editing.el — Text editing behaviour and language modes
 ;;
 ;; Contents:
@@ -163,14 +164,46 @@
             (put-text-property (point) eol 'wrap-prefix prefix))
           (forward-line 1))))))
 
+;; An empty last line has no character to carry line-prefix, so after
+;; RET at end of buffer the cursor would sit at column 0 until the first
+;; keystroke. A zero-width overlay at point-max draws the prefix instead;
+;; the cursor lands after a before-string, i.e. at the indented position.
+(defvar-local ay--markdown-indent-eob-ov nil)
+
+(defun ay--markdown-indent-eob ()
+  "Show the heading-level prefix on an empty last line."
+  (let ((empty-last (or (= (point-min) (point-max))
+                        (eq (char-before (point-max)) ?\n))))
+    (if (not empty-last)
+        (when ay--markdown-indent-eob-ov
+          (delete-overlay ay--markdown-indent-eob-ov))
+      (let ((level 0))
+        (save-excursion
+          (goto-char (point-max))
+          (when (re-search-backward "^\\(#\\{1,6\\}\\) " nil t)
+            (setq level (- (match-end 1) (match-beginning 1)))))
+        (let ((prefix (make-string (* (max 0 (1- level))
+                                      ay-markdown-indent-width)
+                                   ?\s)))
+          (unless (overlayp ay--markdown-indent-eob-ov)
+            (setq ay--markdown-indent-eob-ov
+                  (make-overlay (point-max) (point-max) nil t nil)))
+          (move-overlay ay--markdown-indent-eob-ov (point-max) (point-max))
+          (overlay-put ay--markdown-indent-eob-ov 'before-string prefix))))))
+
 (define-minor-mode ay-markdown-indent-mode
   "Visually indent markdown content by heading level."
   :lighter nil
   (if ay-markdown-indent-mode
       (progn
         (jit-lock-register #'ay--markdown-indent-fontify)
-        (ay--markdown-indent-fontify (point-min) (point-max)))
+        (ay--markdown-indent-fontify (point-min) (point-max))
+        (add-hook 'post-command-hook #'ay--markdown-indent-eob nil t)
+        (ay--markdown-indent-eob))
     (jit-lock-unregister #'ay--markdown-indent-fontify)
+    (remove-hook 'post-command-hook #'ay--markdown-indent-eob t)
+    (when ay--markdown-indent-eob-ov
+      (delete-overlay ay--markdown-indent-eob-ov))
     (with-silent-modifications
       (remove-text-properties (point-min) (point-max)
                               '(line-prefix nil wrap-prefix nil)))))

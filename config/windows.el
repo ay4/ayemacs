@@ -1,3 +1,4 @@
+;;; windows.el --- -*- lexical-binding: t; -*-
 ;; windows.el — Window/pane management and dimming
 ;;
 ;; Contents:
