@@ -1,3 +1,4 @@
+;;; keybindings.el --- -*- lexical-binding: t; -*-
 ;; keybindings.el — Global key bindings and unbindings
 ;;
 ;; Contents:
@@ -105,12 +106,44 @@
 ;; Editor Keybindings
 ;; ──────────────────────────────────────────
 
+;; Native file panels. On NS Emacs, x-file-dialog shows NSOpenPanel
+;; when MUSTMATCH is non-nil and NSSavePanel otherwise. Cancel signals quit.
+;; In a terminal (Termux, emacs -nw) there are no dialogs: fall back to
+;; the usual minibuffer prompts.
+(defun ay--file-dialog-p ()
+  (and (display-graphic-p) (fboundp 'x-file-dialog)))
+
+(defun ay-open-file-dialog ()
+  "Open a file with the native Finder open panel."
+  (interactive)
+  (if (not (ay--file-dialog-p))
+      (call-interactively #'counsel-find-file)
+    (let ((file (x-file-dialog "Open" default-directory nil t)))
+      (when file (find-file file)))))
+
+(defun ay-save-as-dialog ()
+  "Save the buffer under a name chosen in the native save panel."
+  (interactive)
+  (if (not (ay--file-dialog-p))
+      (call-interactively #'write-file)
+    (let* ((dir  (if buffer-file-name (file-name-directory buffer-file-name)
+                   (expand-file-name "~/")))
+           (name (if buffer-file-name (file-name-nondirectory buffer-file-name)
+                   ""))
+           (file (x-file-dialog "Save As" dir name nil)))
+      (when file (write-file file)))))
+
+(defun ay-save-dialog ()
+  "Save the buffer; ask for a name in the native save panel if it has none."
+  (interactive)
+  (if buffer-file-name (save-buffer) (ay-save-as-dialog)))
+
 (general-define-key "C-k" 'ay-menu)
-(general-define-key "C-o" 'counsel-find-file)
+(general-define-key "C-o" 'ay-open-file-dialog)
 (general-define-key "C-=" 'text-scale-increase)
 (general-define-key "C--" 'text-scale-decrease)
 (general-define-key "C-0" 'text-scale-adjust) ; C-0 resets to default
-(general-define-key "C-s" 'save-buffer)
+(general-define-key "C-s" 'ay-save-dialog)
 (general-define-key "C-n" (lambda () (interactive) (switch-to-buffer "*scratch*")))
 (general-define-key "C-t" 'ay-split-right)
 (general-define-key "C-w" 'kill-current-buffer)

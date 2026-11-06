@@ -10,3 +10,7 @@ backup/
 dirvish/
 *~
 \#*\#
+
+# Per-machine state
+recentf.eld
+.claude/

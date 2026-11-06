@@ -1,3 +1,4 @@
+;;; ui.el --- -*- lexical-binding: t; -*-
 ;; ui.el — Visual appearance and startup
 ;;
 ;; Contents:
@@ -28,6 +29,10 @@
 (global-auto-revert-mode t)
 (setq-default cursor-type 'box)
 (when (fboundp 'fringe-mode) (fringe-mode 0))
+
+;; Default font size, in 1/10 pt (macOS default is 120 = 12pt).
+;; Other faces with relative :height scale from this.
+(set-face-attribute 'default nil :height 150)
 
 
 ;; ──────────────────────────────────────────
@@ -123,6 +128,27 @@
           (let ((bg (face-attribute 'default :background nil t)))
             (when (and bg (not (eq bg 'unspecified)))
               (set-face-background 'internal-border bg)
+              ;; Fringes (and olivetti's side areas, which inherit from
+              ;; fringe) blend into the page instead of the theme's grey.
+              (set-face-background 'fringe bg)
+              ;; Emacs 31 draws window margins with the `margin' face,
+              ;; which themes like modus colour like the fringe.
+              (when (facep 'margin)
+                (set-face-background 'margin bg))
+              ;; Mode line: page background, a thin rule on top only,
+              ;; smaller text.
+              (let ((rule (face-attribute 'shadow :foreground nil t)))
+                (dolist (face '(mode-line mode-line-active mode-line-inactive))
+                  (when (facep face)
+                    (set-face-attribute face nil
+                                        :background bg
+                                        :box nil
+                                        :underline nil
+                                        :overline rule
+                                        :height 0.85))))
+              ;; Some themes (modus, ef) style olivetti-fringe directly.
+              (when (facep 'olivetti-fringe)
+                (set-face-background 'olivetti-fringe bg))
               ;; Keep title-bar buttons dark/light in sync with the theme.
               (when (eq system-type 'darwin)
                 (let* ((c (color-values bg))
@@ -138,6 +164,8 @@
 (ay-setup-frame-border)
 (add-hook 'after-make-frame-functions #'ay-setup-frame-border)
 (advice-add 'load-theme :after #'ay-setup-frame-border)
+;; olivetti-fringe is defined (and themed) only when olivetti loads.
+(with-eval-after-load 'olivetti (ay-setup-frame-border))
 
 
 ;; ──────────────────────────────────────────
@@ -169,6 +197,7 @@
 
 (defun ay-save-theme (theme)
   (with-temp-file (expand-file-name "theme.el" user-emacs-directory)
+    (insert ";;; theme.el --- -*- lexical-binding: t; -*-\n")
     (when (eq theme 'catppuccin)
       (insert "(setq catppuccin-flavor 'mocha)\n"))
     (insert (format "(load-theme '%s t)\n" theme))))
@@ -216,10 +245,12 @@
 ;; Startup State
 ;; ──────────────────────────────────────────
 
-;; Load saved theme — after all theme packages are registered above
+;; Load saved theme — after all theme packages are registered above.
+;; theme.el is written by ay-pick-theme; fall back to a default if it is missing.
 (let ((theme-file (expand-file-name "theme.el" user-emacs-directory)))
-  (when (file-exists-p theme-file)
-    (load theme-file nil t)))
+  (if (file-exists-p theme-file)
+      (load theme-file nil t)
+    (load-theme 'modus-operandi-tinted t)))
 
 ;; early-init.el hides the frame to prevent white flash during startup.
 ;; Position the frame (matching Hammerspoon HYPER+v: 12×8 grid, x=4 y=1 w=4 h=6)

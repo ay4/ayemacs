@@ -1,3 +1,4 @@
+;;; early-init.el --- -*- lexical-binding: t; -*-
 ;; Hide the initial frame until the theme has loaded to avoid a white flash
 (push '(visibility . nil) initial-frame-alist)
 
@@ -11,3 +12,8 @@
 
 ;; Disable package.el — straight.el handles everything
 (setq package-enable-startup nil)
+
+;; Background native compilation of third-party packages: compile quietly.
+;; Their "function not known to be defined" warnings are harmless and
+;; otherwise pop up a *Warnings* buffer the first time a package loads.
+(setq native-comp-async-report-warnings-errors 'silent)

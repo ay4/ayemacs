@@ -1,3 +1,4 @@
+;;; menus.el --- -*- lexical-binding: t; -*-
 ;; menus.el — Transient menus (main, file, buffers, view, settings, pane, apps, here)
 ;;
 ;; Contents:
@@ -19,9 +20,9 @@
   "File operations."
   [["file"
     ("n" "new (scratch)"  (lambda () (interactive) (switch-to-buffer "*scratch*")))
-    ("o" "open"           counsel-find-file)
-    ("s" "save"           save-buffer)
-    ("S" "save as"        write-file)
+    ("o" "open"           ay-open-file-dialog)
+    ("s" "save"           ay-save-dialog)
+    ("S" "save as"        ay-save-as-dialog)
     ("c" "close"          kill-buffer)]])
 
 ;; ── Buffers ───────────────────────────────
@@ -234,3 +235,23 @@
     ("h" "here →"     ay-here-menu)
     ("s" "settings →" ay-settings-menu)
     ("q" "quit"       save-buffers-kill-emacs)]])
+
+;; ── Preload menu targets ──────────────────
+;; Transient loads each suffix command's package the first time a menu
+;; is opened (View pulls in org/markdown/olivetti, Apps pulls in
+;; eww/elpher/eat — ~0.5s total). Load them in idle time after startup
+;; instead, one per tick, yielding as soon as there's keyboard input.
+(defvar ay--preload-features
+  '(olivetti markdown-mode org eww elpher eat erc org-indent)
+  "Features loaded in the background after startup.")
+
+(defun ay--preload-step ()
+  (while (and ay--preload-features (not (input-pending-p)))
+    (let ((inhibit-message t))
+      (with-demoted-errors "Preload: %S"
+        (require (pop ay--preload-features) nil t))))
+  (when ay--preload-features
+    (run-with-idle-timer 0.5 nil #'ay--preload-step)))
+
+(add-hook 'emacs-startup-hook
+          (lambda () (run-with-idle-timer 1 nil #'ay--preload-step)))
